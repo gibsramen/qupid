@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Dict, Sequence, TypeVar, Union
+from typing import Sequence, TypeVar
 
 import numpy as np
 import numpy.typing as npt
@@ -8,6 +8,7 @@ import pandas as pd
 from .exceptions import (IntersectingSamplesError,
                          DisjointCategoryValuesError,
                          NoMatchesError)
+
 
 DiscreteValue = TypeVar("DiscreteValue", str, bool)
 ContinuousValue = TypeVar("ContinuousValue", float, int)
@@ -19,6 +20,7 @@ class Match:
         controls: pd.Series
     ):
         ...
+
 
 def match_by_single(
     focus: pd.Series,
@@ -78,6 +80,7 @@ def match_by_single(
 
     return matches
 
+
 def _do_category_values_overlap(
     focus: pd.Series, background: pd.Series
 ) -> bool:
@@ -94,6 +97,7 @@ def _do_category_values_overlap(
     """
     intersection = set(focus.unique()) & set(background.unique())
     return bool(intersection)
+
 
 def _match_continuous(
     focus_value: ContinuousValue,
@@ -115,6 +119,7 @@ def _match_continuous(
     :rtype: np.ndarray
     """
     return np.isclose(background_values, focus_value, atol=tolerance)
+
 
 def _match_discrete(
     focus_value: DiscreteValue,

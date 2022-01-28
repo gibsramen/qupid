@@ -5,6 +5,7 @@ import pytest
 import matchlock.exceptions as mexc
 import matchlock.matching as mm
 
+
 class TestErrors:
     def test_match_by_single_sample_overlap(self):
         s1 = pd.Series([1, 2, 3, 4])

@@ -1,4 +1,4 @@
-from typing import Sequence, Union
+from typing import Sequence
 
 
 class IntersectingSamplesError(Exception):
@@ -10,6 +10,7 @@ class IntersectingSamplesError(Exception):
         )
         super().__init__(self.message)
 
+
 class DisjointCategoryValuesError(Exception):
     def __init__(self, group_1: Sequence, group_2: Sequence):
         self.group_1_values = set(group_1)
@@ -19,6 +20,7 @@ class DisjointCategoryValuesError(Exception):
             f"{self.group_1_values} vs. {self.group_2_values}"
         )
         super().__init__(self.message)
+
 
 class NoMatchesError(Exception):
     def __init__(self, idx: str):
