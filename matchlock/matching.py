@@ -43,6 +43,9 @@ class Match:
         with open(path, "w") as f:
             json.dump(tmp_cc_map, f)
 
+    def __getitem__(self, case_name: str) -> set:
+        return self.case_control_map[case_name]
+
 
 class MatchBySingle(Match):
     def __init__(
