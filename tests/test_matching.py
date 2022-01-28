@@ -44,6 +44,30 @@ class TestErrors:
             mm.match_by_single(s1, s2, "ampharos")
         assert str(exc_info.value) == exp_msg
 
+    def test_no_matches_discrete_raise(self):
+        s1 = pd.Series(["a", "b", "c", "d"])
+        s2 = pd.Series(["a", "b", "f", "d"])
+        s1.index = [f"S{x}A" for x in range(4)]
+        s2.index = [f"S{x}B" for x in range(4)]
+
+        exp_msg = "No valid matches found for sample S2A."
+        with pytest.raises(mexc.NoMatchesError) as exc_info:
+            mm.match_by_single(s1, s2, "discrete", on_failure="raise")
+        assert str(exc_info.value) == exp_msg
+
+    def test_no_matches_continuous_raise(self):
+        s1 = pd.Series([1.0, 2.0, 3.0, 4.0])
+        s2 = pd.Series([1.4, 3.5, 4.5, 0.5])
+        s1.index = [f"S{x}A" for x in range(4)]
+        s2.index = [f"S{x}B" for x in range(4)]
+
+        exp_msg = "No valid matches found for sample S1A."
+        with pytest.raises(mexc.NoMatchesError) as exc_info:
+            mm.match_by_single(s1, s2, "continuous", tolerance=0.5,
+                               on_failure="raise")
+        assert str(exc_info.value) == exp_msg
+
+
 class TestMatchers:
     def test_match_continuous(self):
         focus_value = 1.0

@@ -1,5 +1,6 @@
-from typing import Sequence
+from typing import Sequence, Union
 
+CategoryValue = Union[float, str]
 
 class IntersectingSamplesError(Exception):
     def __init__(self, group_1: Sequence, group_2: Sequence):
@@ -22,5 +23,5 @@ class DisjointCategoryValuesError(Exception):
 
 class NoMatchesError(Exception):
     def __init__(self, idx: str):
-        self.message = f"No valid matches found for {idx}."
+        self.message = f"No valid matches found for sample {idx}."
         super().__init__(self.message)

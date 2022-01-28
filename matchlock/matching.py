@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Dict, Sequence
 
 import numpy as np
@@ -53,7 +54,8 @@ def match_by_single(
             raise DisjointCategoryValuesError(focus, background)
         matcher = _match_discrete
     elif category_type == "continuous":
-        matcher = _match_continuous
+        # Only want to pass tolerance if continuous category
+        matcher = partial(_match_continuous, tolerance=tolerance)
     else:
         raise ValueError(
             "category_type must be 'continuous' or 'discrete'. "
@@ -93,11 +95,12 @@ def _do_category_values_overlap(
 def _match_continuous(
     focus_value: float,
     background_values: np.ndarray,
-    tolerance: float
+    tolerance: float,
 ) -> npt.NDArray[bool]:
     return np.isclose(background_values, focus_value, atol=tolerance)
 
 def _match_discrete(
-    focus_value: str, background_values: np.ndarray
+    focus_value: str,
+    background_values: np.ndarray,
 ) -> npt.NDArray[bool]:
     return focus_value == background_values
