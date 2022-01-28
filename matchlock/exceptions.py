@@ -19,3 +19,8 @@ class DisjointCategoryValuesError(Exception):
             f"{self.group_1_values} vs. {self.group_2_values}"
         )
         super().__init__(self.message)
+
+class NoMatchesError(Exception):
+    def __init__(self, idx: str):
+        self.message = f"No valid matches found for {idx}."
+        super().__init__(self.message)

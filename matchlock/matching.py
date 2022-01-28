@@ -1,10 +1,12 @@
 from typing import Dict, Sequence
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from .exceptions import (IntersectingSamplesError,
-                         DisjointCategoryValuesError)
+                         DisjointCategoryValuesError,
+                         NoMatchesError)
 
 
 class Match:
@@ -49,8 +51,27 @@ def match_by_single(
     if category_type == "discrete":
         if not _do_category_values_overlap(focus, background):
             raise DisjointCategoryValuesError(focus, background)
+        matcher = _match_discrete
+    elif category_type == "continuous":
+        matcher = _match_continuous
+    else:
+        raise ValueError(
+            "category_type must be 'continuous' or 'discrete'. "
+            f"'{category_type}' is not a valid choice."
+        )
 
-    return
+    matches = {}
+    for f_idx, f_val in focus.iteritems():
+        hits = matcher(f_val, background.values)
+        if hits.any():
+            matches[f_idx] = set(background.index[hits])
+        else:
+            if on_failure == "raise":
+                raise NoMatchesError(f_idx)
+            else:
+                matches[f_idx] - set()
+
+    return matches
 
 def _do_category_values_overlap(
     focus: pd.Series, background: pd.Series
@@ -68,3 +89,15 @@ def _do_category_values_overlap(
     """
     intersection = set(focus.unique()) & set(background.unique())
     return bool(intersection)
+
+def _match_continuous(
+    focus_value: float,
+    background_values: np.ndarray,
+    tolerance: float
+) -> npt.NDArray[bool]:
+    return np.isclose(background_values, focus_value, atol=tolerance)
+
+def _match_discrete(
+    focus_value: str, background_values: np.ndarray
+) -> npt.NDArray[bool]:
+    return focus_value == background_values
