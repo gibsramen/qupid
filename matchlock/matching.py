@@ -2,7 +2,6 @@ from functools import partial
 from typing import Dict, Sequence, TypeVar
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 
 from .exceptions import (IntersectingSamplesError,
@@ -107,7 +106,7 @@ def _match_continuous(
     focus_value: ContinuousValue,
     background_values: Sequence[ContinuousValue],
     tolerance: float,
-) -> npt.NDArray[bool]:
+) -> np.ndarray:
     """Find matches to a given float value within tolerance.
 
     :param focus_value: Value to be matched
@@ -128,7 +127,7 @@ def _match_continuous(
 def _match_discrete(
     focus_value: DiscreteValue,
     background_values: Sequence[DiscreteValue],
-) -> npt.NDArray[bool]:
+) -> np.ndarray:
     """Find matches to a given discrete value.
 
     :param focus_value: Value to be matched
