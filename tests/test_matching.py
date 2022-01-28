@@ -112,6 +112,35 @@ class TestMatchBySingle:
         assert match.case_control_map == exp_match
 
 
+class TestMatchByMultiple:
+    def test_simple(self):
+        focus_cat_1 = ["A", "B", "C", "B", "C"]
+        focus_cat_2 = [1.0, 2.0, 3.0, 2.5, 4.0]
+        bg_cat_1 = ["A", "B", "B", "C", "D", "C", "A"]
+        bg_cat_2 = [2.0, 1.0, 2.5, 2.5, 3.5, 4.0, 3.0]
+
+        focus_index = [f"S{x}A" for x in range(5)]
+        bg_index = [f"S{x}B" for x in range(7)]
+
+        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2},
+                             index=focus_index)
+        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2},
+                          index=bg_index)
+
+        cat_type_map = {"cat_1": "discrete", "cat_2": "continuous"}
+        tol_map = {"cat_2": 1.0}
+
+        match = mm.match_by_multiple(focus, bg, cat_type_map, tol_map)
+        exp_match = {
+            "S0A": {"S0B"},
+            "S1A": {"S1B", "S2B"},
+            "S2A": {"S3B", "S5B"},
+            "S3A": {"S2B"},
+            "S4A": {"S5B"}
+        }
+        assert match.case_control_map == exp_match
+
+
 class TestMatchClass:
     def test_save_mapping(self, tmp_path):
         outpath = os.path.join(tmp_path, "test.json")

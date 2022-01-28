@@ -7,7 +7,8 @@ import pandas as pd
 
 from .exceptions import (IntersectingSamplesError,
                          DisjointCategoryValuesError,
-                         NoMatchesError)
+                         NoMatchesError,
+                         MissingCategoriesError)
 
 
 DiscreteValue = TypeVar("DiscreteValue", str, bool)
@@ -57,11 +58,11 @@ class MatchByMultiple(Match):
     def __init__(
         self,
         case_control_map: Dict[str, set],
-        category_map: Dict[str, str],
+        category_type_map: Dict[str, str],
         tolerance_map: Dict[str, float] = None
     ):
         super().__init__(case_control_map)
-        self.category_map = category_map
+        self.category_type_map = category_type_map
         self.tolerance_map = tolerance_map
 
 
@@ -71,7 +72,7 @@ def match_by_single(
     category_type: str,
     tolerance: float = 1e-08,
     on_failure: str = "raise"
-) -> Match:
+) -> MatchBySingle:
     """Get matched samples for a single category.
 
     :param focus: Samples to be matched
@@ -92,7 +93,7 @@ def match_by_single(
     :type on_failure: str
 
     :returns: Matched control samples
-    :rtype: matchlock.Match
+    :rtype: matchlock.MatchBySingle
     """
     if set(focus.index) & set(background.index):
         raise IntersectingSamplesError(focus.index, background.index)
@@ -124,6 +125,61 @@ def match_by_single(
     return MatchBySingle(matches, tolerance=tolerance)
 
 
+def match_by_multiple(
+    focus: pd.DataFrame,
+    background: pd.DataFrame,
+    category_type_map: Dict[str, str],
+    tolerance_map: Dict[str, float],
+    on_failure: str = "raise"
+) -> MatchByMultiple:
+    """Get matched samples for multiple categories.
+
+    :param focus: Samples to be matched
+    :type focus: pd.DataFrame
+
+    :param background: Metadata to match against
+    :type background: pd.DataFrame
+
+    :param category_type_map: Mapping of whether each category is continous or
+        discrete. Only included categories will be used.
+    :type category_type_map: Dict[str, str]
+
+    :param tolerance_map: Mapping of tolerances for continuous categories,
+        categories not represented are assumed to have no tolerance
+    :type tolerance_map: Dict[str, float]
+
+    :param on_failure: Whether to 'raise' or 'ignore' sample for which a match
+        cannot be found, defaults to 'raise'
+    :type on_failure: str
+
+    :returns: Matched control samples
+    :rtype: matchlock.MatchByMultiple
+    """
+    if not _are_categories_subset(category_type_map, focus):
+        raise MissingCategoriesError(category_type_map, "focus", focus)
+
+    if not _are_categories_subset(category_type_map, background):
+        raise MissingCategoriesError(category_type_map, "background",
+                                     background)
+
+    if tolerance_map is None:
+        tolerance_map = dict()
+
+    # Match everyone at first
+    matches = {i: set(background.index) for i in focus.index}
+
+    for cat, cat_type in category_type_map.items():
+        tol = tolerance_map.get(cat)
+        observed = match_by_single(focus[cat], background[cat], cat_type,
+                                   tol, on_failure).case_control_map
+        for fidx, fhits in observed.items():
+            # Reduce the matches with successive categories
+            matches[fidx] = matches[fidx] & fhits
+
+    return MatchByMultiple(matches, category_type_map=category_type_map,
+                           tolerance_map=tolerance_map)
+
+
 def _do_category_values_overlap(
     focus: pd.Series, background: pd.Series
 ) -> bool:
@@ -140,6 +196,21 @@ def _do_category_values_overlap(
     """
     intersection = set(focus.unique()) & set(background.unique())
     return bool(intersection)
+
+
+def _are_categories_subset(category_map: dict, target: pd.DataFrame) -> bool:
+    """Check to make sure all categories in map are in target DataFrame.
+
+    :param category_map: Mapping of category names as keys
+    :type category_map: dict
+
+    :param target: DataFrame to interrogate for categories
+    :type target: pd.DataFrame
+
+    :returns: True if all categories are present in target, False otherwise
+    :rtype: bool
+    """
+    return set(category_map.keys()).issubset(target.columns)
 
 
 def _match_continuous(

@@ -1,4 +1,6 @@
-from typing import Sequence
+from typing import Dict, Sequence, Union
+
+import pandas as pd
 
 
 class IntersectingSamplesError(Exception):
@@ -25,4 +27,21 @@ class DisjointCategoryValuesError(Exception):
 class NoMatchesError(Exception):
     def __init__(self, idx: str):
         self.message = f"No valid matches found for sample {idx}."
+        super().__init__(self.message)
+
+
+class MissingCategoriesError(Exception):
+    def __init__(
+        self,
+        category_map: Dict[str, Union[str, float]],
+        target_name: str,
+        target_df: pd.DataFrame
+    ):
+        self.missing_categories = (
+            set(category_map.keys()).difference(set(target_df.columns))
+        )
+        self.message = (
+            f"The following categories are missing from {target_name}: "
+            f"{self.missing_categories}"
+        )
         super().__init__(self.message)
