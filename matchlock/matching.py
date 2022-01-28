@@ -18,18 +18,13 @@ class Match:
     def __init__(
         self,
         case_control_map: Dict[str, set],
-        tolerance: float = None
     ):
-        """Class storing case-control data & metadata.
+        """Base class storing case-control data & metadata.
 
         :param case_control_map: Dict of cases to sets of controls
         :type case_control_map: dict(str -> set)
-
-        :param tolerance: Tolerance for continuous categories
-        :type tolerance: float
         """
         self.case_control_map = case_control_map
-        self.tolerance = tolerance
 
     @property
     def cases(self) -> List[str]:
@@ -46,6 +41,28 @@ class Match:
         tmp_cc_map = {k: list(v) for k, v in self.case_control_map.items()}
         with open(path, "w") as f:
             json.dump(tmp_cc_map, f)
+
+
+class MatchBySingle(Match):
+    def __init__(
+        self,
+        case_control_map: Dict[str, set],
+        tolerance: float = None
+    ):
+        super().__init__(case_control_map)
+        self.tolerance = tolerance
+
+
+class MatchByMultiple(Match):
+    def __init__(
+        self,
+        case_control_map: Dict[str, set],
+        category_map: Dict[str, str],
+        tolerance_map: Dict[str, float] = None
+    ):
+        super().__init__(case_control_map)
+        self.category_map = category_map
+        self.tolerance_map = tolerance_map
 
 
 def match_by_single(
@@ -104,7 +121,7 @@ def match_by_single(
             else:
                 matches[f_idx] = set()
 
-    return Match(matches)
+    return MatchBySingle(matches, tolerance=tolerance)
 
 
 def _do_category_values_overlap(

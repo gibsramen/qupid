@@ -117,7 +117,7 @@ class TestMatchClass:
         outpath = os.path.join(tmp_path, "test.json")
 
         cc_map = {"S1A": {"S2B", "S4B"}, "S3A": {"S6B", "S2B"}}
-        match = mm.Match(cc_map)
+        match = mm.MatchBySingle(cc_map)
         match.save_mapping(outpath)
         with open(outpath, "r") as f:
             content = json.load(f)
