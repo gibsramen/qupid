@@ -94,13 +94,38 @@ def _do_category_values_overlap(
 
 def _match_continuous(
     focus_value: float,
-    background_values: np.ndarray,
+    background_values: npt.NDArray[float],
     tolerance: float,
 ) -> npt.NDArray[bool]:
+    """Find matches to a given float value within tolerance.
+
+    :param focus_value: Value to be matched
+    :type focus_value: float
+
+    :param background_values: Values in which to search for matches
+    :type background_values: np.ndarray
+
+    :param tolerance: Tolerance with which to evaluate matches
+    :type tolerance: float
+
+    :returns: Binary array of matches
+    :rtype: np.ndarray
+    """
     return np.isclose(background_values, focus_value, atol=tolerance)
 
 def _match_discrete(
     focus_value: str,
     background_values: np.ndarray,
 ) -> npt.NDArray[bool]:
+    """Find matches to a given discrete value.
+
+    :param focus_value: Value to be matched
+    :type focus_value: str
+
+    :param background_values: Values in which to search for matches
+    :type background_values: np.ndarray
+
+    :returns: Binary array of matches
+    :rtype: np.ndarray
+    """
     return focus_value == background_values
