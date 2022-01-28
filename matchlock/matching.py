@@ -1,5 +1,5 @@
-import json
 from functools import partial
+import json
 from typing import Dict, List, Sequence, TypeVar
 
 import numpy as np
