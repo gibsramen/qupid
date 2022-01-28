@@ -1,5 +1,6 @@
+import json
 from functools import partial
-from typing import Dict, Sequence, TypeVar
+from typing import Dict, List, Sequence, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -16,13 +17,35 @@ ContinuousValue = TypeVar("ContinuousValue", float, int)
 class Match:
     def __init__(
         self,
-        case_control_map: Dict[str, set]
+        case_control_map: Dict[str, set],
+        tolerance: float = None
     ):
+        """Class storing case-control data & metadata.
+
+        :param case_control_map: Dict of cases to sets of controls
+        :type case_control_map: dict(str -> set)
+
+        :param tolerance: Tolerance for continuous categories
+        :type tolerance: float
+        """
         self.case_control_map = case_control_map
+        self.tolerance = tolerance
 
     @property
-    def cases(self):
-        return self.case_control_map.keys()
+    def cases(self) -> List[str]:
+        """Get names of cases."""
+        return list(self.case_control_map.keys())
+
+    def save_mapping(self, path) -> None:
+        """Saves case-control mapping to file as JSON.
+
+        :param path: Location to save
+        :type path: os.PathLike
+        """
+        # Can't serialize sets so we convert to lists
+        tmp_cc_map = {k: list(v) for k, v in self.case_control_map.items()}
+        with open(path, "w") as f:
+            json.dump(tmp_cc_map, f)
 
 
 def match_by_single(

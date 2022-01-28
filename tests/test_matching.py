@@ -1,3 +1,6 @@
+import json
+import os
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -107,3 +110,16 @@ class TestMatchBySingle:
             "S7A": {"S2B", "S3B"}
         }
         assert match.case_control_map == exp_match
+
+
+class TestMatchClass:
+    def test_save_mapping(self, tmp_path):
+        outpath = os.path.join(tmp_path, "test.json")
+
+        cc_map = {"S1A": {"S2B", "S4B"}, "S3A": {"S6B", "S2B"}}
+        match = mm.Match(cc_map)
+        match.save_mapping(outpath)
+        with open(outpath, "r") as f:
+            content = json.load(f)
+            assert set(content["S1A"]) == {"S2B", "S4B"}
+            assert set(content["S3A"]) == {"S6B", "S2B"}
