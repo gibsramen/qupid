@@ -71,6 +71,41 @@ class TestErrors:
                                on_failure="raise")
         assert str(exc_info.value) == exp_msg
 
+    def test_match_by_multiple_cat_subset_err(self):
+        focus_cat_1 = ["A", "B", "C", "B", "C"]
+        focus_cat_2 = [1.0, 2.0, 3.0, 2.5, 4.0]
+        bg_cat_1 = ["A", "B", "B", "C", "D", "C", "A"]
+        bg_cat_2 = [2.0, 1.0, 2.5, 2.5, 3.5, 4.0, 3.0]
+
+        focus_index = [f"S{x}A" for x in range(5)]
+        bg_index = [f"S{x}B" for x in range(7)]
+
+        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2},
+                             index=focus_index)
+        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2,
+                           "cat_3": bg_cat_1},
+                          index=bg_index)
+
+        cat_type_map = {"cat_1": "discrete", "cat_2": "continuous",
+                        "cat_3": "discrete"}
+        tol_map = {"cat_2": 1.0}
+
+        with pytest.raises(mexc.MissingCategoriesError) as exc_info:
+            mm.match_by_multiple(focus, bg, cat_type_map, tol_map)
+        assert exc_info.value.missing_categories == {"cat_3"}
+        assert "focus" in str(exc_info.value)
+
+        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2,
+                              "cat_3": focus_cat_1},
+                             index=focus_index)
+        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2},
+                          index=bg_index)
+
+        with pytest.raises(mexc.MissingCategoriesError) as exc_info:
+            mm.match_by_multiple(focus, bg, cat_type_map, tol_map)
+        assert exc_info.value.missing_categories == {"cat_3"}
+        assert "background" in str(exc_info.value)
+
 
 class TestMatchers:
     def test_match_continuous(self):
