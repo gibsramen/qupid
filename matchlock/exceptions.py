@@ -1,6 +1,5 @@
 from typing import Sequence, Union
 
-CategoryValue = Union[float, str]
 
 class IntersectingSamplesError(Exception):
     def __init__(self, group_1: Sequence, group_2: Sequence):

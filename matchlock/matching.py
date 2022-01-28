@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Dict, Sequence
+from typing import Dict, Sequence, TypeVar, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -8,6 +8,9 @@ import pandas as pd
 from .exceptions import (IntersectingSamplesError,
                          DisjointCategoryValuesError,
                          NoMatchesError)
+
+DiscreteValue = TypeVar("DiscreteValue", str, bool)
+ContinuousValue = TypeVar("ContinuousValue", float, int)
 
 
 class Match:
@@ -93,17 +96,17 @@ def _do_category_values_overlap(
     return bool(intersection)
 
 def _match_continuous(
-    focus_value: float,
-    background_values: npt.NDArray[float],
+    focus_value: ContinuousValue,
+    background_values: Sequence[ContinuousValue],
     tolerance: float,
 ) -> npt.NDArray[bool]:
     """Find matches to a given float value within tolerance.
 
     :param focus_value: Value to be matched
-    :type focus_value: float
+    :type focus_value: str, bool
 
     :param background_values: Values in which to search for matches
-    :type background_values: np.ndarray
+    :type background_values: Sequence
 
     :param tolerance: Tolerance with which to evaluate matches
     :type tolerance: float
@@ -114,8 +117,8 @@ def _match_continuous(
     return np.isclose(background_values, focus_value, atol=tolerance)
 
 def _match_discrete(
-    focus_value: str,
-    background_values: np.ndarray,
+    focus_value: DiscreteValue,
+    background_values: Sequence[DiscreteValue],
 ) -> npt.NDArray[bool]:
     """Find matches to a given discrete value.
 
@@ -123,9 +126,9 @@ def _match_discrete(
     :type focus_value: str
 
     :param background_values: Values in which to search for matches
-    :type background_values: np.ndarray
+    :type background_values: Sequence
 
     :returns: Binary array of matches
     :rtype: np.ndarray
     """
-    return focus_value == background_values
+    return np.array(focus_value == background_values)
