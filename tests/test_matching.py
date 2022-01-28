@@ -86,3 +86,24 @@ class TestMatchers:
 
         hits = mm._match_discrete(focus_value, background_values)
         assert (exp_hits == hits).all()
+
+
+class TestMatchBySingle:
+    def test_simple(self):
+        s1 = pd.Series([1, 2, 3, 4, 5, 6, 7, 8])
+        s2 = pd.Series([3, 5, 7, 9, 4, 6, 6, 2])
+        s1.index = [f"S{x}A" for x in range(8)]
+        s2.index = [f"S{x}B" for x in range(8)]
+
+        match = mm.match_by_single(s1, s2, "continuous", 1.0)
+        exp_match = {
+            "S0A": {"S7B"},
+            "S1A": {"S0B", "S7B"},
+            "S2A": {"S0B", "S4B", "S7B"},
+            "S3A": {"S0B", "S1B", "S4B"},
+            "S4A": {"S1B", "S4B", "S5B", "S6B"},
+            "S5A": {"S1B", "S2B", "S5B", "S6B"},
+            "S6A": {"S2B", "S5B", "S6B"},
+            "S7A": {"S2B", "S3B"}
+        }
+        assert match.case_control_map == exp_match

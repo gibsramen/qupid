@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Sequence, TypeVar
+from typing import Dict, Sequence, TypeVar
 
 import numpy as np
 import numpy.typing as npt
@@ -16,10 +16,14 @@ ContinuousValue = TypeVar("ContinuousValue", float, int)
 
 class Match:
     def __init__(
-        cases: pd.Series,
-        controls: pd.Series
+        self,
+        case_control_map: Dict[str, set]
     ):
-        ...
+        self.case_control_map = case_control_map
+
+    @property
+    def cases(self):
+        return self.case_control_map.keys()
 
 
 def match_by_single(
@@ -67,7 +71,7 @@ def match_by_single(
             f"'{category_type}' is not a valid choice."
         )
 
-    matches = {}
+    matches = dict()
     for f_idx, f_val in focus.iteritems():
         hits = matcher(f_val, background.values)
         if hits.any():
@@ -76,9 +80,9 @@ def match_by_single(
             if on_failure == "raise":
                 raise NoMatchesError(f_idx)
             else:
-                matches[f_idx] - set()
+                matches[f_idx] = set()
 
-    return matches
+    return Match(matches)
 
 
 def _do_category_values_overlap(
