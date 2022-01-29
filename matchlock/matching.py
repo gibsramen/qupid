@@ -8,7 +8,8 @@ import pandas as pd
 from .exceptions import (IntersectingSamplesError,
                          DisjointCategoryValuesError,
                          NoMatchesError,
-                         MissingCategoriesError)
+                         MissingCategoriesError,
+                         NoMoreControlsError)
 
 
 DiscreteValue = TypeVar("DiscreteValue", str, bool)
@@ -94,13 +95,14 @@ class CaseMatch:
         used_controls = set()
         case_controls = []
         data = []
-        for case, controls in ordered_ccm:
+        for i, (case, controls) in enumerate(ordered_ccm):
             if set(controls).issubset(used_controls):
-                print("boop")
+                remaining = [x[0] for x in ordered_ccm[i:]]
+                raise NoMoreControlsError(remaining)
             not_used = list(set(controls) - used_controls)
             random_match = rng.choice(not_used)
             case_controls.append(random_match)
-            not_used.append(random_match)
+            used_controls.add(random_match)
 
             data.append((case, "case", None))
             data.append((random_match, "control", case))

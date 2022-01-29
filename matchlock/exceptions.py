@@ -1,4 +1,4 @@
-from typing import Dict, Sequence, Union
+from typing import Collection, Dict, Sequence, Union
 
 import pandas as pd
 
@@ -45,3 +45,12 @@ class MissingCategoriesError(Exception):
             f"{self.missing_categories}"
         )
         super().__init__(self.message)
+
+
+class NoMoreControlsError(Exception):
+    def __init__(self, remaining: Collection):
+        self.remaining = remaining
+        self.message = (
+            "Prematurely exhausted all matching controls. "
+            f"Remaining cases: {self.remaining}"
+        )
