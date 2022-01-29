@@ -194,3 +194,17 @@ class TestCaseMatch:
         match = mm.CaseMatch.load_mapping(inpath)
         assert match["S1A"] == {"S2B", "S4B"}
         assert match["S3A"] == {"S6B", "S2B"}
+
+    def test_properties(self):
+        s1 = pd.Series([1, 2, 3, 4, 5, 6, 7, 8])
+        s2 = pd.Series([3, 5, 7, 9, 4, 6, 6, 2, 10, 11])
+        s1.index = [f"S{x}A" for x in range(8)]
+        s2.index = [f"S{x}B" for x in range(10)]
+
+        match = mm.match_by_single(s1, s2, "continuous", 1.0)
+
+        exp_controls = set(s2.index[:-2])
+        assert match.controls == exp_controls
+
+        exp_cases = set(s1.index)
+        assert match.cases == exp_cases

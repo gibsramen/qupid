@@ -1,6 +1,6 @@
-from functools import partial
+from functools import partial, reduce
 import json
-from typing import Dict, List, Sequence, TypeVar
+from typing import Dict, List, Sequence, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -16,20 +16,28 @@ ContinuousValue = TypeVar("ContinuousValue", float, int)
 
 
 class CaseMatch:
-    def __init__(self, case_control_map: Dict[str, set]):
+    def __init__(self, case_control_map: Dict[str, set],
+                 metadata: Union[pd.Series, pd.DataFrame] = None):
         """Base class storing case-control data & metadata.
 
         :param case_control_map: Dict of cases to sets of controls
         :type case_control_map: dict(str -> set)
         """
         self.case_control_map = case_control_map
+        self.metadata = metadata
 
     @property
     def cases(self) -> List[str]:
         """Get names of cases."""
-        return list(self.case_control_map.keys())
+        return set(self.case_control_map.keys())
 
-    def save_mapping(self, path) -> None:
+    @property
+    def controls(self) -> List[str]:
+        """Get names of all controls."""
+        ccm = self.case_control_map
+        return reduce(lambda x, y: x.union(y), ccm.values())
+
+    def save_mapping(self, path: str) -> None:
         """Saves case-control mapping to file as JSON.
 
         :param path: Location to save
@@ -41,11 +49,14 @@ class CaseMatch:
             json.dump(tmp_cc_map, f)
 
     @classmethod
-    def load_mapping(cls, path):
+    def load_mapping(cls, path: str, metadata_file: str = None):
         """Create CaseMatch object from JSON file.
 
-        :param path: Location to load from
+        :param path: Location to load mapping from
         :type path: os.PathLike
+
+        :param metadata_file: Location of metadata file (optional)
+        :type metadata_file: os.PathLike
 
         :returns: New CaseMatch object
         :rtype: CaseMatch
@@ -53,7 +64,13 @@ class CaseMatch:
         with open(path, "r") as f:
             ccm = json.load(f)
         ccm = {k: set(v) for k, v in ccm.items()}
-        return cls(ccm)
+
+        if metadata_file is not None:
+            metadata = pd.read_table(metadata_file, sep="\t", index_col=0)
+        else:
+            metadata = None
+
+        return cls(ccm, metadata)
 
     def __getitem__(self, case_name: str) -> set:
         return self.case_control_map[case_name]
