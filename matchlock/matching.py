@@ -132,7 +132,8 @@ def match_by_single(
             else:
                 matches[f_idx] = set()
 
-    return CaseMatch(matches)
+    metadata = pd.concat([focus, background])
+    return CaseMatch(matches, metadata)
 
 
 def match_by_multiple(
@@ -186,7 +187,8 @@ def match_by_multiple(
             # Reduce the matches with successive categories
             matches[fidx] = matches[fidx] & fhits
 
-    return CaseMatch(matches)
+    metadata = pd.concat([focus, background])
+    return CaseMatch(matches, metadata)
 
 
 def _do_category_values_overlap(
