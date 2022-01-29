@@ -72,6 +72,48 @@ class CaseMatch:
 
         return cls(ccm, metadata)
 
+    def greedy_match(self, seed: float = None) -> pd.DataFrame:
+        """Pick controls for each case by naive greedy algorithm.
+
+        NOTE: Can probably improve algorithm with "best" match from tolerance
+              in the case of continuous. Later on could account for ordinal
+              relationships but that's likely a ways off.
+
+        :param seed: Random seed for greedy matching (optional)
+        :type seed: float
+
+        :returns: DataFrame of single case-control matches
+        :rtype: pd.DataFrame
+        """
+        rng = np.random.default_rng(seed)
+
+        # Sort from smallest to largest number of matches
+        ordered_ccm = sorted(self.case_control_map.items(),
+                             key=lambda x: len(x[1]))
+
+        used_controls = set()
+        case_controls = []
+        data = []
+        for case, controls in ordered_ccm:
+            if set(controls).issubset(used_controls):
+                print("boop")
+            not_used = list(set(controls) - used_controls)
+            random_match = rng.choice(not_used)
+            case_controls.append(random_match)
+            not_used.append(random_match)
+
+            data.append((case, "case", None))
+            data.append((random_match, "control", case))
+
+        df = pd.DataFrame(
+            data,
+            columns=["#SampleID", "case_or_control", "case"]
+        ).set_index("#SampleID")
+        if self.metadata is not None:
+            df = self.join(metadata)
+
+        return df
+
     def __getitem__(self, case_name: str) -> set:
         return self.case_control_map[case_name]
 

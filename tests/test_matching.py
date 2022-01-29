@@ -208,3 +208,16 @@ class TestCaseMatch:
 
         exp_cases = set(s1.index)
         assert match.cases == exp_cases
+
+    def test_greedy_match(self):
+        inpath = os.path.join(os.path.dirname(__file__), "data/test.json")
+        match = mm.CaseMatch.load_mapping(inpath)
+        df = match.greedy_match()
+
+        # 6 Cases -> 12 rows
+        assert df.shape == (12, 2)
+        exp_cols = {"case_or_control", "case"}
+        assert set(df.columns) == exp_cols
+        df_cases = set(df.query("case_or_control == 'case'").index)
+        exp_cases = set([f"S{x}A" for x in range(6)])
+        assert df_cases == exp_cases
