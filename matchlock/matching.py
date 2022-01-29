@@ -16,10 +16,7 @@ ContinuousValue = TypeVar("ContinuousValue", float, int)
 
 
 class CaseMatch:
-    def __init__(
-        self,
-        case_control_map: Dict[str, set],
-    ):
+    def __init__(self, case_control_map: Dict[str, set]):
         """Base class storing case-control data & metadata.
 
         :param case_control_map: Dict of cases to sets of controls
@@ -47,35 +44,13 @@ class CaseMatch:
         return self.case_control_map[case_name]
 
 
-class CaseMatchBySingle(CaseMatch):
-    def __init__(
-        self,
-        case_control_map: Dict[str, set],
-        tolerance: float = None
-    ):
-        super().__init__(case_control_map)
-        self.tolerance = tolerance
-
-
-class CaseMatchByMultiple(CaseMatch):
-    def __init__(
-        self,
-        case_control_map: Dict[str, set],
-        category_type_map: Dict[str, str],
-        tolerance_map: Dict[str, float] = None
-    ):
-        super().__init__(case_control_map)
-        self.category_type_map = category_type_map
-        self.tolerance_map = tolerance_map
-
-
 def match_by_single(
     focus: pd.Series,
     background: pd.Series,
     category_type: str,
     tolerance: float = 1e-08,
     on_failure: str = "raise"
-) -> CaseMatchBySingle:
+) -> CaseMatch:
     """Get matched samples for a single category.
 
     :param focus: Samples to be matched
@@ -96,7 +71,7 @@ def match_by_single(
     :type on_failure: str
 
     :returns: Matched control samples
-    :rtype: matchlock.CaseMatchBySingle
+    :rtype: matchlock.CaseMatch
     """
     if set(focus.index) & set(background.index):
         raise IntersectingSamplesError(focus.index, background.index)
@@ -125,7 +100,7 @@ def match_by_single(
             else:
                 matches[f_idx] = set()
 
-    return CaseMatchBySingle(matches, tolerance=tolerance)
+    return CaseMatch(matches)
 
 
 def match_by_multiple(
@@ -134,7 +109,7 @@ def match_by_multiple(
     category_type_map: Dict[str, str],
     tolerance_map: Dict[str, float],
     on_failure: str = "raise"
-) -> CaseMatchByMultiple:
+) -> CaseMatch:
     """Get matched samples for multiple categories.
 
     :param focus: Samples to be matched
@@ -156,7 +131,7 @@ def match_by_multiple(
     :type on_failure: str
 
     :returns: Matched control samples
-    :rtype: matchlock.CaseMatchByMultiple
+    :rtype: matchlock.CaseMatch
     """
     if not _are_categories_subset(category_type_map, focus):
         raise MissingCategoriesError(category_type_map, "focus", focus)
@@ -179,8 +154,7 @@ def match_by_multiple(
             # Reduce the matches with successive categories
             matches[fidx] = matches[fidx] & fhits
 
-    return CaseMatchByMultiple(matches, category_type_map=category_type_map,
-                               tolerance_map=tolerance_map)
+    return CaseMatch(matches)
 
 
 def _do_category_values_overlap(
