@@ -183,3 +183,14 @@ class TestCaseMatch:
             content = json.load(f)
             assert set(content["S1A"]) == {"S2B", "S4B"}
             assert set(content["S3A"]) == {"S6B", "S2B"}
+
+    def test_load_mapping(self, tmp_path):
+        inpath = os.path.join(tmp_path, "test.json")
+
+        cc_map = {"S1A": ["S2B", "S4B"], "S3A": ["S6B", "S2B"]}
+        with open(inpath, "w") as f:
+            json.dump(cc_map, f)
+
+        match = mm.CaseMatch.load_mapping(inpath)
+        assert match["S1A"] == {"S2B", "S4B"}
+        assert match["S3A"] == {"S6B", "S2B"}

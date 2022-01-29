@@ -40,6 +40,21 @@ class CaseMatch:
         with open(path, "w") as f:
             json.dump(tmp_cc_map, f)
 
+    @classmethod
+    def load_mapping(cls, path):
+        """Create CaseMatch object from JSON file.
+
+        :param path: Location to load from
+        :type path: os.PathLike
+
+        :returns: New CaseMatch object
+        :rtype: CaseMatch
+        """
+        with open(path, "r") as f:
+            ccm = json.load(f)
+        ccm = {k: set(v) for k, v in ccm.items()}
+        return cls(ccm)
+
     def __getitem__(self, case_name: str) -> set:
         return self.case_control_map[case_name]
 
