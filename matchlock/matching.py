@@ -15,7 +15,7 @@ DiscreteValue = TypeVar("DiscreteValue", str, bool)
 ContinuousValue = TypeVar("ContinuousValue", float, int)
 
 
-class Match:
+class CaseMatch:
     def __init__(
         self,
         case_control_map: Dict[str, set],
@@ -47,7 +47,7 @@ class Match:
         return self.case_control_map[case_name]
 
 
-class MatchBySingle(Match):
+class CaseMatchBySingle(CaseMatch):
     def __init__(
         self,
         case_control_map: Dict[str, set],
@@ -57,7 +57,7 @@ class MatchBySingle(Match):
         self.tolerance = tolerance
 
 
-class MatchByMultiple(Match):
+class CaseMatchByMultiple(CaseMatch):
     def __init__(
         self,
         case_control_map: Dict[str, set],
@@ -75,7 +75,7 @@ def match_by_single(
     category_type: str,
     tolerance: float = 1e-08,
     on_failure: str = "raise"
-) -> MatchBySingle:
+) -> CaseMatchBySingle:
     """Get matched samples for a single category.
 
     :param focus: Samples to be matched
@@ -96,7 +96,7 @@ def match_by_single(
     :type on_failure: str
 
     :returns: Matched control samples
-    :rtype: matchlock.MatchBySingle
+    :rtype: matchlock.CaseMatchBySingle
     """
     if set(focus.index) & set(background.index):
         raise IntersectingSamplesError(focus.index, background.index)
@@ -125,7 +125,7 @@ def match_by_single(
             else:
                 matches[f_idx] = set()
 
-    return MatchBySingle(matches, tolerance=tolerance)
+    return CaseMatchBySingle(matches, tolerance=tolerance)
 
 
 def match_by_multiple(
@@ -134,7 +134,7 @@ def match_by_multiple(
     category_type_map: Dict[str, str],
     tolerance_map: Dict[str, float],
     on_failure: str = "raise"
-) -> MatchByMultiple:
+) -> CaseMatchByMultiple:
     """Get matched samples for multiple categories.
 
     :param focus: Samples to be matched
@@ -156,7 +156,7 @@ def match_by_multiple(
     :type on_failure: str
 
     :returns: Matched control samples
-    :rtype: matchlock.MatchByMultiple
+    :rtype: matchlock.CaseMatchByMultiple
     """
     if not _are_categories_subset(category_type_map, focus):
         raise MissingCategoriesError(category_type_map, "focus", focus)
@@ -179,8 +179,8 @@ def match_by_multiple(
             # Reduce the matches with successive categories
             matches[fidx] = matches[fidx] & fhits
 
-    return MatchByMultiple(matches, category_type_map=category_type_map,
-                           tolerance_map=tolerance_map)
+    return CaseMatchByMultiple(matches, category_type_map=category_type_map,
+                               tolerance_map=tolerance_map)
 
 
 def _do_category_values_overlap(

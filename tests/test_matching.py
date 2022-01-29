@@ -126,7 +126,7 @@ class TestMatchers:
         assert (exp_hits == hits).all()
 
 
-class TestMatchBySingle:
+class TestCaseMatchBySingle:
     def test_simple(self):
         s1 = pd.Series([1, 2, 3, 4, 5, 6, 7, 8])
         s2 = pd.Series([3, 5, 7, 9, 4, 6, 6, 2])
@@ -147,7 +147,7 @@ class TestMatchBySingle:
         assert match.case_control_map == exp_match
 
 
-class TestMatchByMultiple:
+class TestCaseMatchByMultiple:
     def test_simple(self):
         focus_cat_1 = ["A", "B", "C", "B", "C"]
         focus_cat_2 = [1.0, 2.0, 3.0, 2.5, 4.0]
@@ -181,7 +181,7 @@ class TestMatchClass:
         outpath = os.path.join(tmp_path, "test.json")
 
         cc_map = {"S1A": {"S2B", "S4B"}, "S3A": {"S6B", "S2B"}}
-        match = mm.MatchBySingle(cc_map)
+        match = mm.CaseMatchBySingle(cc_map)
         match.save_mapping(outpath)
         with open(outpath, "r") as f:
             content = json.load(f)
