@@ -6,4 +6,4 @@ stylecheck:
 	flake8 setup.py
 
 test:
-	pytest tests/*.py
+	pytest --cov-report term-missing --cov=matchlock tests/
