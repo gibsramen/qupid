@@ -112,7 +112,7 @@ class CaseMatch:
             columns=["#SampleID", "case_or_control", "case"]
         ).set_index("#SampleID")
         if self.metadata is not None:
-            df = self.join(self.metadata)
+            df = pd.concat([df, self.metadata], axis=1, join="inner")
 
         return df
 
