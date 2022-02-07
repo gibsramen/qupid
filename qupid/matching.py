@@ -147,7 +147,7 @@ def match_by_single(
     :type on_failure: str
 
     :returns: Matched control samples
-    :rtype: matchlock.CaseMatch
+    :rtype: qupid.CaseMatch
     """
     if set(focus.index) & set(background.index):
         raise IntersectingSamplesError(focus.index, background.index)
@@ -208,7 +208,7 @@ def match_by_multiple(
     :type on_failure: str
 
     :returns: Matched control samples
-    :rtype: matchlock.CaseMatch
+    :rtype: qupid.CaseMatch
     """
     if not _are_categories_subset(category_type_map, focus):
         raise MissingCategoriesError(category_type_map, "focus", focus)

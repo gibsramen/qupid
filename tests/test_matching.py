@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import matchlock.exceptions as mexc
-import matchlock.matching as mm
+import qupid.exceptions as mexc
+import qupid.matching as mm
 
 
 class TestErrors:
