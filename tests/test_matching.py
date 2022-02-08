@@ -123,6 +123,25 @@ class TestErrors:
         actual_remaining = set(exc_info.value.remaining)
         assert exp_remaining == actual_remaining
 
+    def test_multiple_no_tol_map(self):
+        focus_cat_1 = ["A", "B", "C", "B", "C"]
+        focus_cat_2 = [1.0, 2.0, 3.0, 2.5, 4.0]
+        bg_cat_1 = ["A", "B", "B", "C", "D", "C", "A"]
+        bg_cat_2 = [2.0, 1.0, 2.5, 2.5, 3.5, 4.0, 3.0]
+
+        focus_index = [f"S{x}A" for x in range(5)]
+        bg_index = [f"S{x}B" for x in range(7)]
+
+        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2},
+                             index=focus_index)
+        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2},
+                          index=bg_index)
+
+        cat_type_map = {"cat_1": "discrete", "cat_2": "continuous"}
+
+        with pytest.raises(mexc.NoMoreControlsError) as exc_info:
+            match = mm.match_by_multiple(focus, bg, cat_type_map)
+
 
 class TestMatchers:
     def test_match_continuous(self):
@@ -240,21 +259,23 @@ class TestCaseMatch:
         exp_cases = set([f"S{x}A" for x in range(6)])
         assert df_cases == exp_cases
 
-    def test_multiple_no_tol_map(self):
-        focus_cat_1 = ["A", "B", "C", "B", "C"]
-        focus_cat_2 = [1.0, 2.0, 3.0, 2.5, 4.0]
-        bg_cat_1 = ["A", "B", "B", "C", "D", "C", "A"]
-        bg_cat_2 = [2.0, 1.0, 2.5, 2.5, 3.5, 4.0, 3.0]
+    def test_on_failure_ignore(self):
+        s1 = pd.Series([1, 2, 3, 4, 5, 6, 7, 8, 100])
+        s2 = pd.Series([3, 5, 7, 9, 4, 6, 6, 2, 50])
+        s1.index = [f"S{x}A" for x in range(9)]
+        s2.index = [f"S{x}B" for x in range(9)]
 
-        focus_index = [f"S{x}A" for x in range(5)]
-        bg_index = [f"S{x}B" for x in range(7)]
-
-        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2},
-                             index=focus_index)
-        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2},
-                          index=bg_index)
-
-        cat_type_map = {"cat_1": "discrete", "cat_2": "continuous"}
-
-        with pytest.raises(mexc.NoMoreControlsError) as exc_info:
-            match = mm.match_by_multiple(focus, bg, cat_type_map)
+        match = mm.match_by_single(s1, s2, "continuous", 1.0,
+                                   on_failure="ignore")
+        exp_match = {
+            "S0A": {"S7B"},
+            "S1A": {"S0B", "S7B"},
+            "S2A": {"S0B", "S4B", "S7B"},
+            "S3A": {"S0B", "S1B", "S4B"},
+            "S4A": {"S1B", "S4B", "S5B", "S6B"},
+            "S5A": {"S1B", "S2B", "S5B", "S6B"},
+            "S6A": {"S2B", "S5B", "S6B"},
+            "S7A": {"S2B", "S3B"},
+            "S8A": set()
+        }
+        assert match.case_control_map == exp_match
