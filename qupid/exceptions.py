@@ -51,10 +51,8 @@ class NoMoreControlsError(Exception):
     def __init__(self, remaining: Collection = None):
         self.remaining = remaining
         self.message = (
-            "Prematurely exhausted all matching controls. "
+            "Prematurely exhausted all matching controls."
         )
         if remaining is not None:
-            self.message += f"Remaining cases: {self.remaining}"
+            self.message += f" Remaining cases: {self.remaining}"
         super().__init__(self.message)
-
-

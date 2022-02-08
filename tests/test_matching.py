@@ -140,7 +140,10 @@ class TestErrors:
         cat_type_map = {"cat_1": "discrete", "cat_2": "continuous"}
 
         with pytest.raises(mexc.NoMoreControlsError) as exc_info:
-            match = mm.match_by_multiple(focus, bg, cat_type_map)
+            mm.match_by_multiple(focus, bg, cat_type_map)
+
+        exp_msg = "Prematurely exhausted all matching controls."
+        assert str(exc_info.value) == exp_msg
 
 
 class TestMatchers:
