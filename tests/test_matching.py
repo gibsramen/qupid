@@ -239,3 +239,22 @@ class TestCaseMatch:
         df_cases = set(df.query("case_or_control == 'case'").index)
         exp_cases = set([f"S{x}A" for x in range(6)])
         assert df_cases == exp_cases
+
+    def test_multiple_no_tol_map(self):
+        focus_cat_1 = ["A", "B", "C", "B", "C"]
+        focus_cat_2 = [1.0, 2.0, 3.0, 2.5, 4.0]
+        bg_cat_1 = ["A", "B", "B", "C", "D", "C", "A"]
+        bg_cat_2 = [2.0, 1.0, 2.5, 2.5, 3.5, 4.0, 3.0]
+
+        focus_index = [f"S{x}A" for x in range(5)]
+        bg_index = [f"S{x}B" for x in range(7)]
+
+        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2},
+                             index=focus_index)
+        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2},
+                          index=bg_index)
+
+        cat_type_map = {"cat_1": "discrete", "cat_2": "continuous"}
+
+        with pytest.raises(mexc.NoMoreControlsError) as exc_info:
+            match = mm.match_by_multiple(focus, bg, cat_type_map)
