@@ -147,7 +147,7 @@ def match_by_single(
     :type on_failure: str
 
     :returns: Matched control samples
-    :rtype: matchlock.CaseMatch
+    :rtype: qupid.CaseMatch
     """
     if set(focus.index) & set(background.index):
         raise IntersectingSamplesError(focus.index, background.index)
@@ -184,7 +184,7 @@ def match_by_multiple(
     focus: pd.DataFrame,
     background: pd.DataFrame,
     category_type_map: Dict[str, str],
-    tolerance_map: Dict[str, float],
+    tolerance_map: Dict[str, float] = None,
     on_failure: str = "raise"
 ) -> CaseMatch:
     """Get matched samples for multiple categories.
@@ -199,8 +199,8 @@ def match_by_multiple(
         discrete. Only included categories will be used.
     :type category_type_map: Dict[str, str]
 
-    :param tolerance_map: Mapping of tolerances for continuous categories,
-        categories not represented are assumed to have no tolerance
+    :param tolerance_map: Mapping of tolerances for continuous categories.
+        Categories not represented are default to 1e-08
     :type tolerance_map: Dict[str, float]
 
     :param on_failure: Whether to 'raise' or 'ignore' sample for which a match
@@ -208,7 +208,7 @@ def match_by_multiple(
     :type on_failure: str
 
     :returns: Matched control samples
-    :rtype: matchlock.CaseMatch
+    :rtype: qupid.CaseMatch
     """
     if not _are_categories_subset(category_type_map, focus):
         raise MissingCategoriesError(category_type_map, "focus", focus)
@@ -224,12 +224,14 @@ def match_by_multiple(
     matches = {i: set(background.index) for i in focus.index}
 
     for cat, cat_type in category_type_map.items():
-        tol = tolerance_map.get(cat)
+        tol = tolerance_map.get(cat, 1e-08)
         observed = match_by_single(focus[cat], background[cat], cat_type,
                                    tol, on_failure).case_control_map
         for fidx, fhits in observed.items():
             # Reduce the matches with successive categories
             matches[fidx] = matches[fidx] & fhits
+            if not matches[fidx] and on_failure == "raise":
+                raise NoMoreControlsError()
 
     metadata = pd.concat([focus, background])
     return CaseMatch(matches, metadata)
