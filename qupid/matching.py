@@ -1,9 +1,10 @@
 from functools import partial, reduce
 import json
-from typing import Dict, List, Sequence, TypeVar, Union
+from typing import Dict, Sequence, Set, TypeVar, Union
 
 import numpy as np
 import pandas as pd
+from skbio import DistanceMatrix
 
 from .exceptions import (IntersectingSamplesError,
                          DisjointCategoryValuesError,
@@ -18,7 +19,8 @@ ContinuousValue = TypeVar("ContinuousValue", float, int)
 
 class CaseMatch:
     def __init__(self, case_control_map: Dict[str, set],
-                 metadata: Union[pd.Series, pd.DataFrame] = None):
+                 metadata: Union[pd.Series, pd.DataFrame] = None,
+                 distance_matrix: DistanceMatrix = None):
         """Base class storing case-control data & metadata.
 
         :param case_control_map: Dict of cases to sets of controls
@@ -26,14 +28,15 @@ class CaseMatch:
         """
         self.case_control_map = case_control_map
         self.metadata = metadata
+        self.distance_matrix = distance_matrix
 
     @property
-    def cases(self) -> List[str]:
+    def cases(self) -> Set[str]:
         """Get names of cases."""
         return set(self.case_control_map.keys())
 
     @property
-    def controls(self) -> List[str]:
+    def controls(self) -> Set[str]:
         """Get names of all controls."""
         ccm = self.case_control_map
         return reduce(lambda x, y: x.union(y), ccm.values())
@@ -73,7 +76,8 @@ class CaseMatch:
 
         return cls(ccm, metadata)
 
-    def greedy_match(self, seed: float = None) -> pd.DataFrame:
+    # https://www.python.org/dev/peps/pep-0484/#forward-references
+    def greedy_match(self, seed: float = None) -> 'CaseMatch':
         """Pick controls for each case by naive greedy algorithm.
 
         NOTE: Can probably improve algorithm with "best" match from tolerance
@@ -94,7 +98,7 @@ class CaseMatch:
 
         used_controls = set()
         case_controls = []
-        data = []
+        greedy_map = dict()
         for i, (case, controls) in enumerate(ordered_ccm):
             if set(controls).issubset(used_controls):
                 remaining = [x[0] for x in ordered_ccm[i:]]
@@ -104,17 +108,9 @@ class CaseMatch:
             case_controls.append(random_match)
             used_controls.add(random_match)
 
-            data.append((case, "case", None))
-            data.append((random_match, "control", case))
+            greedy_map[case] = {random_match}
 
-        df = pd.DataFrame(
-            data,
-            columns=["#SampleID", "case_or_control", "case"]
-        ).set_index("#SampleID")
-        if self.metadata is not None:
-            df = pd.concat([df, self.metadata], axis=1, join="inner")
-
-        return df
+        return CaseMatch(greedy_map, self.metadata, self.distance_matrix)
 
     def __getitem__(self, case_name: str) -> set:
         return self.case_control_map[case_name]

@@ -56,3 +56,9 @@ class NoMoreControlsError(Exception):
         if remaining is not None:
             self.message += f" Remaining cases: {self.remaining}"
         super().__init__(self.message)
+
+
+class NoDistanceMatrixError(Exception):
+    def __init__(self):
+        self.message = "CaseMatch object does not have DistanceMatrix!"
+        super().__init__(self.message)

@@ -252,15 +252,10 @@ class TestCaseMatch:
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
         md_in = os.path.join(os.path.dirname(__file__), "data/test.tsv")
         match = mm.CaseMatch.load_mapping(json_in, md_in)
-        df = match.greedy_match()
+        greedy_cm = match.greedy_match()
 
-        # 6 Cases -> 12 rows
-        assert df.shape == (12, 3)
-        exp_cols = {"case_or_control", "case", "sex"}
-        assert set(df.columns) == exp_cols
-        df_cases = set(df.query("case_or_control == 'case'").index)
-        exp_cases = set([f"S{x}A" for x in range(6)])
-        assert df_cases == exp_cases
+        assert len(greedy_cm.cases) == 6
+        assert len(greedy_cm.controls) == 6
 
     def test_on_failure_ignore(self):
         s1 = pd.Series([1, 2, 3, 4, 5, 6, 7, 8, 100])
