@@ -5,15 +5,15 @@ import pytest
 from scipy.spatial.distance import pdist, squareform
 from skbio import DistanceMatrix
 
-from qupid import CaseMatch
+from qupid import CaseMatchOneToMany, CaseMatchOneToOne
 import qupid.exceptions as exc
 import qupid.stats as stats
 
 
 @pytest.fixture
-def case_match_mock():
+def case_match_one_to_one_mock():
     json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
-    cm = CaseMatch.load_mapping(json_in)
+    cm = CaseMatchOneToMany.load_mapping(json_in)
     greedy_cm = cm.greedy_match()
 
     num_samples = len(greedy_cm.cases) + len(greedy_cm.controls)
@@ -41,8 +41,8 @@ def case_match_mock():
     return greedy_cm
 
 
-def test_permanova(case_match_mock):
-    pnova_res = stats.case_control_permanova(case_match_mock, 500)
+def test_permanova(case_match_one_to_one_mock):
+    pnova_res = stats.case_control_permanova(case_match_one_to_one_mock, 500)
 
     exp_index = [
         "method name", "test statistic name", "sample size",
@@ -52,9 +52,9 @@ def test_permanova(case_match_mock):
     assert list(exp_index) == list(pnova_res.index)
 
 
-def test_permanova_no_dm(case_match_mock):
-    case_match_mock.distance_matrix = None
+def test_permanova_no_dm(case_match_one_to_one_mock):
+    case_match_one_to_one_mock.distance_matrix = None
     with pytest.raises(exc.NoDistanceMatrixError) as exc_info:
-        stats.case_control_permanova(case_match_mock)
+        stats.case_control_permanova(case_match_one_to_one_mock)
     exp_msg = "CaseMatch object does not have DistanceMatrix!"
     assert str(exc_info.value) == exp_msg

@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from functools import partial, reduce
 import json
 from typing import Dict, Sequence, Set, TypeVar, Union
@@ -10,14 +11,15 @@ from .exceptions import (IntersectingSamplesError,
                          DisjointCategoryValuesError,
                          NoMatchesError,
                          MissingCategoriesError,
-                         NoMoreControlsError)
+                         NoMoreControlsError,
+                         NotOneToOneError)
 
 
 DiscreteValue = TypeVar("DiscreteValue", str, bool)
 ContinuousValue = TypeVar("ContinuousValue", float, int)
 
 
-class CaseMatch:
+class _BaseCaseMatch(ABC):
     def __init__(self, case_control_map: Dict[str, set],
                  metadata: Union[pd.Series, pd.DataFrame] = None,
                  distance_matrix: DistanceMatrix = None):
@@ -25,6 +27,13 @@ class CaseMatch:
 
         :param case_control_map: Dict of cases to sets of controls
         :type case_control_map: dict(str -> set)
+
+        :param metadata: Metadata associated with cases & controls (optional)
+        :type metadata: pd.Series or pd.DataFrame
+
+        :param distance_matrix: Beta-diversity distance matrix of cases and
+            controls (optional)
+        :type distance_matrix: skbio.DistanceMatrix
         """
         self.case_control_map = case_control_map
         self.metadata = metadata
@@ -53,31 +62,39 @@ class CaseMatch:
             json.dump(tmp_cc_map, f)
 
     @classmethod
-    def load_mapping(cls, path: str, metadata_file: str = None):
-        """Create CaseMatch object from JSON file.
+    @abstractmethod
+    def load_mapping(cls, path: str):
+        """Create CaseMatch object from JSON file."""
 
-        :param path: Location to load mapping from
-        :type path: os.PathLike
+    def __getitem__(self, case_name: str) -> set:
+        return self.case_control_map[case_name]
 
-        :param metadata_file: Location of metadata file (optional)
-        :type metadata_file: os.PathLike
 
-        :returns: New CaseMatch object
-        :rtype: CaseMatch
+class CaseMatchOneToMany(_BaseCaseMatch):
+    def __init__(self, case_control_map: Dict[str, set],
+                 metadata: Union[pd.Series, pd.DataFrame] = None,
+                 distance_matrix: DistanceMatrix = None):
+        """Case match object for mapping one case to multiple controls.
+
+        :param case_control_map: Dict of cases to sets of controls
+        :type case_control_map: dict(str -> set)
+
+        :param metadata: Metadata associated with cases & controls (optional)
+        :type metadata: pd.Series or pd.DataFrame
+
+        :param distance_matrix: Beta-diversity distance matrix of cases and
+            controls (optional)
+        :type distance_matrix: skbio.DistanceMatrix
         """
-        with open(path, "r") as f:
-            ccm = json.load(f)
-        ccm = {k: set(v) for k, v in ccm.items()}
+        super().__init__(case_control_map, metadata, distance_matrix)
 
-        if metadata_file is not None:
-            metadata = pd.read_table(metadata_file, sep="\t", index_col=0)
-        else:
-            metadata = None
-
-        return cls(ccm, metadata)
+    @classmethod
+    def load_mapping(cls, path: str) -> "CaseMatchOneToMany":
+        cm = _load_mapping(path)
+        return cls(cm)
 
     # https://www.python.org/dev/peps/pep-0484/#forward-references
-    def greedy_match(self, seed: float = None) -> 'CaseMatch':
+    def greedy_match(self, seed: float = None) -> "CaseMatchOneToOne":
         """Pick controls for each case by naive greedy algorithm.
 
         NOTE: Can probably improve algorithm with "best" match from tolerance
@@ -87,8 +104,8 @@ class CaseMatch:
         :param seed: Random seed for greedy matching (optional)
         :type seed: float
 
-        :returns: DataFrame of single case-control matches
-        :rtype: pd.DataFrame
+        :returns: New CaseMatch object with only one control per case
+        :rtype: qupid.CaseMatchOneToOne
         """
         rng = np.random.default_rng(seed)
 
@@ -110,10 +127,34 @@ class CaseMatch:
 
             greedy_map[case] = {random_match}
 
-        return CaseMatch(greedy_map, self.metadata, self.distance_matrix)
+        return CaseMatchOneToOne(greedy_map, self.metadata,
+                                 self.distance_matrix)
 
-    def __getitem__(self, case_name: str) -> set:
-        return self.case_control_map[case_name]
+
+class CaseMatchOneToOne(_BaseCaseMatch):
+    def __init__(self, case_control_map: Dict[str, set],
+                 metadata: Union[pd.Series, pd.DataFrame] = None,
+                 distance_matrix: DistanceMatrix = None):
+        """Case match object for mapping one case to one control.
+
+        :param case_control_map: Dict of cases to sets of controls
+        :type case_control_map: dict(str -> set)
+
+        :param metadata: Metadata associated with cases & controls (optional)
+        :type metadata: pd.Series or pd.DataFrame
+
+        :param distance_matrix: Beta-diversity distance matrix of cases and
+            controls (optional)
+        :type distance_matrix: skbio.DistanceMatrix
+        """
+        super().__init__(case_control_map, metadata, distance_matrix)
+
+    @classmethod
+    def load_mapping(cls, path: str) -> "CaseMatchOneToOne":
+        cm = _load_mapping(path)
+        if not _check_one_to_one(cm):
+            raise NotOneToOneError(cm)
+        return cls(cm)
 
 
 def match_by_single(
@@ -122,7 +163,7 @@ def match_by_single(
     category_type: str,
     tolerance: float = 1e-08,
     on_failure: str = "raise"
-) -> CaseMatch:
+) -> CaseMatchOneToMany:
     """Get matched samples for a single category.
 
     :param focus: Samples to be matched
@@ -143,7 +184,7 @@ def match_by_single(
     :type on_failure: str
 
     :returns: Matched control samples
-    :rtype: qupid.CaseMatch
+    :rtype: qupid.CaseMatchOneToMany
     """
     if set(focus.index) & set(background.index):
         raise IntersectingSamplesError(focus.index, background.index)
@@ -173,7 +214,7 @@ def match_by_single(
                 matches[f_idx] = set()
 
     metadata = pd.concat([focus, background])
-    return CaseMatch(matches, metadata)
+    return CaseMatchOneToMany(matches, metadata)
 
 
 def match_by_multiple(
@@ -182,7 +223,7 @@ def match_by_multiple(
     category_type_map: Dict[str, str],
     tolerance_map: Dict[str, float] = None,
     on_failure: str = "raise"
-) -> CaseMatch:
+) -> CaseMatchOneToMany:
     """Get matched samples for multiple categories.
 
     :param focus: Samples to be matched
@@ -204,7 +245,7 @@ def match_by_multiple(
     :type on_failure: str
 
     :returns: Matched control samples
-    :rtype: qupid.CaseMatch
+    :rtype: qupid.CaseMatchOneToMany
     """
     if not _are_categories_subset(category_type_map, focus):
         raise MissingCategoriesError(category_type_map, "focus", focus)
@@ -230,7 +271,7 @@ def match_by_multiple(
                 raise NoMoreControlsError()
 
     metadata = pd.concat([focus, background])
-    return CaseMatch(matches, metadata)
+    return CaseMatchOneToMany(matches, metadata)
 
 
 def _do_category_values_overlap(
@@ -304,3 +345,20 @@ def _match_discrete(
     :rtype: np.ndarray
     """
     return np.array(focus_value == background_values)
+
+
+def _load_mapping(path: str) -> Dict[str, set]:
+    """Load mapping file from JSON as dict.
+
+    :param path: Location of filepath
+    :type path: str
+    """
+    with open(path, "r") as f:
+        ccm = json.load(f)
+    ccm = {k: set(v) for k, v in ccm.items()}
+    return ccm
+
+
+def _check_one_to_one(case_control_map: dict) -> bool:
+    """Check if mapping dict is one-to-one (one control per case)."""
+    return all([len(ctrls) == 1 for ctrls in case_control_map.values()])

@@ -62,3 +62,10 @@ class NoDistanceMatrixError(Exception):
     def __init__(self):
         self.message = "CaseMatch object does not have DistanceMatrix!"
         super().__init__(self.message)
+
+
+class NotOneToOneError(Exception):
+    def __init__(self, ccm: dict):
+        bad_cases = [k for k, v in ccm.items() if len(v) != 1]
+        self.message = f"The following cases are not one-to-one: {bad_cases}"
+        super().__init__(self.message)

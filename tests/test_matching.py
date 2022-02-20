@@ -114,7 +114,7 @@ class TestErrors:
             "S3A": {"S4B", "S5B"},
             "S4A": {"S5B"}
         }
-        match = mm.CaseMatch(data)
+        match = mm.CaseMatchOneToMany(data)
         with pytest.raises(mexc.NoMoreControlsError) as exc_info:
             match.greedy_match()
 
@@ -216,7 +216,7 @@ class TestCaseMatch:
         outpath = os.path.join(tmp_path, "test.json")
 
         cc_map = {"S1A": {"S2B", "S4B"}, "S3A": {"S6B", "S2B"}}
-        match = mm.CaseMatch(cc_map)
+        match = mm.CaseMatchOneToMany(cc_map)
         match.save_mapping(outpath)
         with open(outpath, "r") as f:
             content = json.load(f)
@@ -230,7 +230,7 @@ class TestCaseMatch:
         with open(inpath, "w") as f:
             json.dump(cc_map, f)
 
-        match = mm.CaseMatch.load_mapping(inpath)
+        match = mm.CaseMatchOneToMany.load_mapping(inpath)
         assert match["S1A"] == {"S2B", "S4B"}
         assert match["S3A"] == {"S6B", "S2B"}
 
@@ -250,10 +250,10 @@ class TestCaseMatch:
 
     def test_greedy_match(self):
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
-        md_in = os.path.join(os.path.dirname(__file__), "data/test.tsv")
-        match = mm.CaseMatch.load_mapping(json_in, md_in)
+        match = mm.CaseMatchOneToMany.load_mapping(json_in)
         greedy_cm = match.greedy_match()
 
+        assert isinstance(greedy_cm, mm.CaseMatchOneToOne)
         assert len(greedy_cm.cases) == 6
         assert len(greedy_cm.controls) == 6
 
