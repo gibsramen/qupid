@@ -6,4 +6,4 @@ stylecheck:
 	flake8 setup.py
 
 test:
-	pytest --cov-report term-missing --cov=qupid tests/
+	pytest --cov-report term-missing --cov=qupid tests/ -W ignore::DeprecationWarning
