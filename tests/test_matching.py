@@ -145,6 +145,19 @@ class TestErrors:
         exp_msg = "Prematurely exhausted all matching controls."
         assert str(exc_info.value) == exp_msg
 
+    def test_not_one_to_one(self, tmp_path):
+        outfile = f"{tmp_path}/dummy.json"
+        ccm = {"S1A": {"S2B", "S3B"}, "S2A": {"S1B", "S4B"}, "S3A": {"S5B"}}
+        tmp_ccm = {k: list(v) for k, v in ccm.items()}
+        with open(outfile, "w") as f:
+            json.dump(tmp_ccm, f)
+
+        with pytest.raises(mexc.NotOneToOneError) as exc_info:
+            mm.CaseMatchOneToOne.load_mapping(outfile)
+
+        exp_msg = "The following cases are not one-to-one: ['S1A', 'S2A']"
+        assert str(exc_info.value) == exp_msg
+
 
 class TestMatchers:
     def test_match_continuous(self):
@@ -233,6 +246,17 @@ class TestCaseMatch:
         match = mm.CaseMatchOneToMany.load_mapping(inpath)
         assert match["S1A"] == {"S2B", "S4B"}
         assert match["S3A"] == {"S6B", "S2B"}
+
+    def test_load_one_to_one(self, tmp_path):
+        outfile = f"{tmp_path}/dummy.json"
+        ccm = {"S1A": {"S2B"}, "S2A": {"S1B"}, "S3A": {"S5B"}}
+        tmp_ccm = {k: list(v) for k, v in ccm.items()}
+        with open(outfile, "w") as f:
+            json.dump(tmp_ccm, f)
+
+        cm = mm.CaseMatchOneToOne.load_mapping(outfile)
+        assert cm.cases == {"S1A", "S2A", "S3A"}
+        assert cm.controls == {"S2B", "S1B", "S5B"}
 
     def test_properties(self):
         s1 = pd.Series([1, 2, 3, 4, 5, 6, 7, 8])
