@@ -68,6 +68,9 @@ class _BaseCaseMatch(ABC):
     def __getitem__(self, case_name: str) -> set:
         return self.case_control_map[case_name]
 
+    def __eq__(self, other: "_BaseCaseMatch"):
+        return self.case_control_map == other.case_control_map
+
 
 class CaseMatchOneToMany(_BaseCaseMatch):
     def __init__(self, case_control_map: Dict[str, set],

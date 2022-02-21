@@ -266,6 +266,14 @@ class TestCaseMatch:
         assert match["S1A"] == {"S2B", "S4B"}
         assert match["S3A"] == {"S6B", "S2B"}
 
+    def test_case_match_eq(self):
+        cc_map1 = {"S1A": {"S2B", "S4B"}, "S3A": {"S6B", "S2B"}}
+        cc_map2 = {"S1A": {"S2B", "S4B"}, "S3A": {"S6B", "S2B"}}
+
+        cm1 = mm.CaseMatchOneToMany(cc_map1)
+        cm2 = mm.CaseMatchOneToMany(cc_map2)
+        assert cm1 == cm2
+
     def test_load_one_to_one(self, tmp_path):
         outfile = f"{tmp_path}/dummy.json"
         ccm = {"S1A": {"S2B"}, "S2A": {"S1B"}, "S3A": {"S5B"}}
