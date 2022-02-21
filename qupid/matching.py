@@ -3,6 +3,7 @@ from functools import partial, reduce
 import json
 from typing import Dict, Sequence, Set, TypeVar, Union
 
+import networkx as nx
 import numpy as np
 import pandas as pd
 from skbio import DistanceMatrix
@@ -59,6 +60,31 @@ class _BaseCaseMatch(ABC):
         tmp_cc_map = {k: list(v) for k, v in self.case_control_map.items()}
         with open(path, "w") as f:
             json.dump(tmp_cc_map, f)
+
+    def to_networkx_graph(self) -> nx.DiGraph:
+        """Convert case control map to networkx Graph.
+
+        Graph is directed and bipartite. Nodes are cases and controls and edges
+        represent a case matched to a valid control. Each edge is assigned
+        an attribute 'capacity' set to 1.0.
+
+        NOTE: In the future it might be better to have edge weights
+            corresponding to closeness for continuous matching categories. This
+            way we could potentially use this information for better flow
+            computations.
+
+        :returns: Directed bipartite graph of matches
+        :rtype: nx.DiGraph
+        """
+        G = nx.DiGraph(self.case_control_map)
+        nx.set_edge_attributes(G, values=1.0, name="capacity")
+        attr_dict = {node: {"sample_type": "case"} for node in self.cases}
+        attr_dict.update({
+            node: {"sample_type": "control"}
+            for node in self.controls
+        })
+        nx.set_node_attributes(G, attr_dict)
+        return G
 
     @classmethod
     @abstractmethod
