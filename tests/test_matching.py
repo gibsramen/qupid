@@ -4,8 +4,9 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+from skbio import DistanceMatrix
 
-import qupid.exceptions as mexc
+import qupid._exceptions as mexc
 import qupid.matching as mm
 
 
@@ -114,7 +115,7 @@ class TestErrors:
             "S3A": {"S4B", "S5B"},
             "S4A": {"S5B"}
         }
-        match = mm.CaseMatch(data)
+        match = mm.CaseMatchOneToMany(data)
         with pytest.raises(mexc.NoMoreControlsError) as exc_info:
             match.greedy_match()
 
@@ -144,6 +145,37 @@ class TestErrors:
 
         exp_msg = "Prematurely exhausted all matching controls."
         assert str(exc_info.value) == exp_msg
+
+    def test_not_one_to_one(self, tmp_path):
+        outfile = f"{tmp_path}/dummy.json"
+        ccm = {"S1A": {"S2B", "S3B"}, "S2A": {"S1B", "S4B"}, "S3A": {"S5B"}}
+        tmp_ccm = {k: list(v) for k, v in ccm.items()}
+        with open(outfile, "w") as f:
+            json.dump(tmp_ccm, f)
+
+        with pytest.raises(mexc.NotOneToOneError) as exc_info1:
+            mm.CaseMatchOneToOne.load_mapping(outfile)
+
+        with pytest.raises(mexc.NotOneToOneError) as exc_info2:
+            mm.CaseMatchOneToOne(ccm)
+
+        exp_msg = "The following cases are not one-to-one: ['S1A', 'S2A']"
+        assert str(exc_info1.value) == str(exc_info2.value) == exp_msg
+
+    def test_missing_samples_dm(self):
+        ccm = {"S1A": {"S2B", "S3B"}, "S2A": {"S1B", "S4B"}, "S3A": {"S5B"}}
+        dm = DistanceMatrix(np.zeros([5, 5]))
+        dm.ids = ("S1A", "S2A", "S3A", "S1B", "S4B")
+
+        err = mexc.MissingSamplesInDistanceMatrixError
+        with pytest.raises(err) as exc_info:
+            mm.CaseMatchOneToMany(ccm, distance_matrix=dm)
+
+        exp_msg = (
+            "The following samples are missing from the DistanceMatrix: "
+        )
+        assert exp_msg in str(exc_info.value)
+        assert exc_info.value.missing_samples == {"S5B", "S2B", "S3B"}
 
 
 class TestMatchers:
@@ -216,7 +248,7 @@ class TestCaseMatch:
         outpath = os.path.join(tmp_path, "test.json")
 
         cc_map = {"S1A": {"S2B", "S4B"}, "S3A": {"S6B", "S2B"}}
-        match = mm.CaseMatch(cc_map)
+        match = mm.CaseMatchOneToMany(cc_map)
         match.save_mapping(outpath)
         with open(outpath, "r") as f:
             content = json.load(f)
@@ -230,9 +262,28 @@ class TestCaseMatch:
         with open(inpath, "w") as f:
             json.dump(cc_map, f)
 
-        match = mm.CaseMatch.load_mapping(inpath)
+        match = mm.CaseMatchOneToMany.load_mapping(inpath)
         assert match["S1A"] == {"S2B", "S4B"}
         assert match["S3A"] == {"S6B", "S2B"}
+
+    def test_case_match_eq(self):
+        cc_map1 = {"S1A": {"S2B", "S4B"}, "S3A": {"S6B", "S2B"}}
+        cc_map2 = {"S1A": {"S2B", "S4B"}, "S3A": {"S6B", "S2B"}}
+
+        cm1 = mm.CaseMatchOneToMany(cc_map1)
+        cm2 = mm.CaseMatchOneToMany(cc_map2)
+        assert cm1 == cm2
+
+    def test_load_one_to_one(self, tmp_path):
+        outfile = f"{tmp_path}/dummy.json"
+        ccm = {"S1A": {"S2B"}, "S2A": {"S1B"}, "S3A": {"S5B"}}
+        tmp_ccm = {k: list(v) for k, v in ccm.items()}
+        with open(outfile, "w") as f:
+            json.dump(tmp_ccm, f)
+
+        cm = mm.CaseMatchOneToOne.load_mapping(outfile)
+        assert cm.cases == {"S1A", "S2A", "S3A"}
+        assert cm.controls == {"S2B", "S1B", "S5B"}
 
     def test_properties(self):
         s1 = pd.Series([1, 2, 3, 4, 5, 6, 7, 8])
@@ -250,10 +301,10 @@ class TestCaseMatch:
 
     def test_greedy_match(self):
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
-        md_in = os.path.join(os.path.dirname(__file__), "data/test.tsv")
-        match = mm.CaseMatch.load_mapping(json_in, md_in)
+        match = mm.CaseMatchOneToMany.load_mapping(json_in)
         greedy_cm = match.greedy_match()
 
+        assert isinstance(greedy_cm, mm.CaseMatchOneToOne)
         assert len(greedy_cm.cases) == 6
         assert len(greedy_cm.controls) == 6
 
