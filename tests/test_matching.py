@@ -107,7 +107,7 @@ class TestErrors:
         assert exc_info.value.missing_categories == {"cat_3"}
         assert "background" in str(exc_info.value)
 
-    def test_no_more_controls(self):
+    def test_no_more_controls_raise(self):
         data = {
             "S0A": {"S0B", "S1B", "S2B"},
             "S1A": {"S1B", "S2B", "S3B"},
@@ -122,6 +122,19 @@ class TestErrors:
         exp_remaining = {"S4A"}
         actual_remaining = set(exc_info.value.remaining)
         assert exp_remaining == actual_remaining
+
+    def test_no_more_controls_ignore(self):
+        data = {
+            "S0A": {"S0B", "S1B", "S2B"},
+            "S1A": {"S1B", "S2B", "S3B"},
+            "S2A": {"S4B"},
+            "S3A": {"S4B", "S5B"},
+            "S4A": {"S5B"}
+        }
+        cm = mm.CaseMatchOneToMany(data)
+        cm_one_to_one = cm.greedy_match(on_failure="ignore")
+
+        assert len(cm_one_to_one.cases) == len(data) - 1
 
     def test_multiple_no_tol_map(self):
         focus_cat_1 = ["A", "B", "C", "B", "C"]

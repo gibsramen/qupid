@@ -125,11 +125,13 @@ class CaseMatchOneToMany(_BaseCaseMatch):
     # https://www.python.org/dev/peps/pep-0484/#forward-references
     def greedy_match(
         self,
-        algorithm: str = "edmonds_karp"
+        algorithm: str = "edmonds_karp",
+        on_failure: str = "raise"
     ) -> "CaseMatchOneToOne":
         """Pick a single control for each case given a matching algorithm.
 
-        To see all possible choices, use qupid.algorithm.get_matching_algorithms
+        qupid.algorithm.get_matching_algorithms() to get all possible choices
+        of matching algorithm.
 
         NOTE: Can probably improve algorithm with "best" match from tolerance
               in the case of continuous. Later on could account for ordinal
@@ -137,12 +139,17 @@ class CaseMatchOneToMany(_BaseCaseMatch):
 
         :param algorithm: Matching algorithm to use for bipartite matching,
             defaults to 'edmonds_karp'
+        :type algorithm: str
+
+        :param on_failure: Whether to 'raise' an error when a control cannot be
+            found or 'ignore' (case is removed), defaults to 'raise'
+        :type param: str, either 'raise' or 'ignore'
 
         :returns: New CaseMatch object with only one control per case
         :rtype: qupid.CaseMatchOneToOne
         """
         match_func = algo.MATCH_ALGORITHM_FUNCS[algorithm]
-        greedy_map = algo.match_one_to_one(self, match_func)
+        greedy_map = algo.match_one_to_one(self, match_func, on_failure)
 
         return CaseMatchOneToOne(greedy_map, self.metadata,
                                  self.distance_matrix)

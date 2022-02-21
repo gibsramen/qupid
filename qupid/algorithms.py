@@ -28,11 +28,16 @@ def get_matching_algorithms() -> None:
 def match_one_to_one(
     case_match: "qupid.CaseMatchOneToMany",
     match_func: Callable,
+    on_failure: str = "raise"
 ) -> dict:
     """Match each case to a single control given a particular algorithm.
 
     :param case_match: All possible controls for each case
     :type case_match: qupid.CaseMatchOneToMany
+
+    :param on_failure: Whether to 'raise' an error when a control cannot be
+        found or 'ignore' (case is removed), defaults to 'raise'
+    :type param: str, either 'raise' or 'ignore'
 
     :param match_func: Function to use for flow maximization
     :type match_func: Callable
@@ -49,8 +54,11 @@ def match_one_to_one(
                 ctrl_id for ctrl_id, flow in ctrls.items() if flow == 1
             )
         except StopIteration:
-            remaining = case_match.cases.difference(one_to_one_map.keys())
-            raise exc.NoMoreControlsError(remaining)
+            if on_failure == "raise":
+                remaining = case_match.cases.difference(one_to_one_map.keys())
+                raise exc.NoMoreControlsError(remaining)
+            else:
+                continue
         one_to_one_map[case] = {match_ctrl}
 
     return one_to_one_map
