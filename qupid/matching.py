@@ -9,6 +9,7 @@ import pandas as pd
 from skbio import DistanceMatrix
 
 from qupid import _exceptions as exc
+from qupid import algorithms as algo
 
 
 DiscreteValue = TypeVar("DiscreteValue", str, bool)
@@ -122,38 +123,26 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         return cls(cm)
 
     # https://www.python.org/dev/peps/pep-0484/#forward-references
-    def greedy_match(self, seed: float = None) -> "CaseMatchOneToOne":
-        """Pick controls for each case by naive greedy algorithm.
+    def greedy_match(
+        self,
+        algorithm: str = "edmonds_karp"
+    ) -> "CaseMatchOneToOne":
+        """Pick a single control for each case given a matching algorithm.
+
+        To see all possible choices, use qupid.algorithm.get_matching_algorithms
 
         NOTE: Can probably improve algorithm with "best" match from tolerance
               in the case of continuous. Later on could account for ordinal
               relationships but that's likely a ways off.
 
-        :param seed: Random seed for greedy matching (optional)
-        :type seed: float
+        :param algorithm: Matching algorithm to use for bipartite matching,
+            defaults to 'edmonds_karp'
 
         :returns: New CaseMatch object with only one control per case
         :rtype: qupid.CaseMatchOneToOne
         """
-        rng = np.random.default_rng(seed)
-
-        # Sort from smallest to largest number of matches
-        ordered_ccm = sorted(self.case_control_map.items(),
-                             key=lambda x: len(x[1]))
-
-        used_controls = set()
-        case_controls = []
-        greedy_map = dict()
-        for i, (case, controls) in enumerate(ordered_ccm):
-            if set(controls).issubset(used_controls):
-                remaining = [x[0] for x in ordered_ccm[i:]]
-                raise exc.NoMoreControlsError(remaining)
-            not_used = list(set(controls) - used_controls)
-            random_match = rng.choice(not_used)
-            case_controls.append(random_match)
-            used_controls.add(random_match)
-
-            greedy_map[case] = {random_match}
+        match_func = algo.MATCH_ALGORITHM_FUNCS[algorithm]
+        greedy_map = algo.match_one_to_one(self, match_func)
 
         return CaseMatchOneToOne(greedy_map, self.metadata,
                                  self.distance_matrix)

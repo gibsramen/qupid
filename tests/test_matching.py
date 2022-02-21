@@ -119,8 +119,7 @@ class TestErrors:
         with pytest.raises(mexc.NoMoreControlsError) as exc_info:
             match.greedy_match()
 
-        # Should fail on S3A after S4A & S2A
-        exp_remaining = {"S0A", "S1A", "S3A"}
+        exp_remaining = {"S4A"}
         actual_remaining = set(exc_info.value.remaining)
         assert exp_remaining == actual_remaining
 

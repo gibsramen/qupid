@@ -1,9 +1,11 @@
 import networkx as nx
-import pandas as pd
 import pytest
 
 import qupid
-import qupid.graph as graph
+import qupid.algorithms as algo
+
+
+all_algos = list(algo.MATCH_ALGORITHM_FUNCS.keys())
 
 
 @pytest.fixture
@@ -33,11 +35,20 @@ def test_to_networkx_graph(one_to_many_mock):
         assert G.nodes[node2]["sample_type"] == "control"
 
 
-def test_edmonds_karp(one_to_many_mock):
-    G = one_to_many_mock.to_networkx_graph()
-    match_dict = graph.edmonds_karp(G)
-    assert len(match_dict) == len(one_to_many_mock.cases)
-    for case, ctrl in match_dict.items():
-        assert case in one_to_many_mock.cases
+@pytest.mark.parametrize("algo", all_algos)
+def test_match_algos(one_to_many_mock, algo):
+    cm_one_to_one = one_to_many_mock.greedy_match(algo)
+    assert isinstance(cm_one_to_one, qupid.CaseMatchOneToOne)
+
+    for case, ctrl in cm_one_to_one.case_control_map.items():
         assert len(ctrl) == 1
-        assert ctrl.issubset(one_to_many_mock.controls)
+        assert ctrl.issubset(cm_one_to_one[case])
+
+
+def test_get_matching_algorithms():
+    match_algos = set(algo.get_matching_algorithms())
+    exp_match_algos = {
+        "edmonds_karp", "ek", "dinitz", "preflow_push", "pp",
+        "boykov_kolmogorov", "bk", "shortest_augmenting_path", "sap"
+    }
+    assert match_algos == exp_match_algos
