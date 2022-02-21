@@ -35,12 +35,12 @@ def match_one_to_one(
     :param case_match: All possible controls for each case
     :type case_match: qupid.CaseMatchOneToMany
 
+    :param match_func: Function to use for flow maximization
+    :type match_func: Callable
+
     :param on_failure: Whether to 'raise' an error when a control cannot be
         found or 'ignore' (case is removed), defaults to 'raise'
     :type param: str, either 'raise' or 'ignore'
-
-    :param match_func: Function to use for flow maximization
-    :type match_func: Callable
     """
     G = _add_flow_nodes(case_match.to_networkx_graph())
     _, match_graph_dict = flow.maximum_flow(G, "source", "target",
@@ -60,7 +60,6 @@ def match_one_to_one(
             else:
                 continue
         one_to_one_map[case] = {match_ctrl}
-
     return one_to_one_map
 
 

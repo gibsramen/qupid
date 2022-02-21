@@ -119,9 +119,12 @@ class TestErrors:
         with pytest.raises(mexc.NoMoreControlsError) as exc_info:
             match.greedy_match()
 
-        exp_remaining = {"S4A"}
+        exp_remaining1 = {"S4A"}
+        exp_remaining2 = {"S2A"}
         actual_remaining = set(exc_info.value.remaining)
-        assert exp_remaining == actual_remaining
+        s4a_missing = exp_remaining1 == actual_remaining
+        s2a_missing = exp_remaining2 == actual_remaining
+        assert s4a_missing or s2a_missing
 
     def test_no_more_controls_ignore(self):
         data = {
