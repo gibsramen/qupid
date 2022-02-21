@@ -147,6 +147,8 @@ class CaseMatchOneToOne(_BaseCaseMatch):
             controls (optional)
         :type distance_matrix: skbio.DistanceMatrix
         """
+        if not _check_one_to_one(case_control_map):
+            raise NotOneToOneError(case_control_map)
         super().__init__(case_control_map, metadata, distance_matrix)
 
     @classmethod

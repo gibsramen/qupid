@@ -152,11 +152,14 @@ class TestErrors:
         with open(outfile, "w") as f:
             json.dump(tmp_ccm, f)
 
-        with pytest.raises(mexc.NotOneToOneError) as exc_info:
+        with pytest.raises(mexc.NotOneToOneError) as exc_info1:
             mm.CaseMatchOneToOne.load_mapping(outfile)
 
+        with pytest.raises(mexc.NotOneToOneError) as exc_info2:
+            mm.CaseMatchOneToOne(ccm)
+
         exp_msg = "The following cases are not one-to-one: ['S1A', 'S2A']"
-        assert str(exc_info.value) == exp_msg
+        assert str(exc_info1.value) == str(exc_info2.value) == exp_msg
 
 
 class TestMatchers:
