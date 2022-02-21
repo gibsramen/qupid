@@ -1,7 +1,7 @@
 import pandas as pd
 from skbio.stats.distance import permanova
 
-from qupid.exceptions import NoDistanceMatrixError
+from qupid._exceptions import NoDistanceMatrixError
 from qupid.matching import CaseMatchOneToOne
 
 

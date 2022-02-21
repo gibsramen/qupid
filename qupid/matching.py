@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from skbio import DistanceMatrix
 
-from qupid import exceptions as exc
+from qupid import _exceptions as exc
 
 
 DiscreteValue = TypeVar("DiscreteValue", str, bool)

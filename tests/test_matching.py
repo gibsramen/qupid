@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from skbio import DistanceMatrix
 
-import qupid.exceptions as mexc
+import qupid._exceptions as mexc
 import qupid.matching as mm
 
 

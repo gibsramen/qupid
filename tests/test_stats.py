@@ -6,7 +6,7 @@ from scipy.spatial.distance import pdist, squareform
 from skbio import DistanceMatrix
 
 from qupid import CaseMatchOneToMany
-import qupid.exceptions as exc
+import qupid._exceptions as exc
 import qupid.stats as stats
 
 
