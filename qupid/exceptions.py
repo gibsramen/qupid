@@ -64,6 +64,17 @@ class NoDistanceMatrixError(Exception):
         super().__init__(self.message)
 
 
+class MissingSamplesInDistanceMatrixError(Exception):
+    def __init__(self, missing_samples: set):
+        msg = (
+            "The following samples are missing from the DistanceMatrix: "
+            f"{missing_samples}"
+        )
+        self.message = msg
+        self.missing_samples = missing_samples
+        super().__init__(self.message)
+
+
 class NotOneToOneError(Exception):
     def __init__(self, ccm: dict):
         bad_cases = [k for k, v in ccm.items() if len(v) != 1]

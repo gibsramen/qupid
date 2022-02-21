@@ -7,12 +7,7 @@ import numpy as np
 import pandas as pd
 from skbio import DistanceMatrix
 
-from .exceptions import (IntersectingSamplesError,
-                         DisjointCategoryValuesError,
-                         NoMatchesError,
-                         MissingCategoriesError,
-                         NoMoreControlsError,
-                         NotOneToOneError)
+from qupid import exceptions as exc
 
 
 DiscreteValue = TypeVar("DiscreteValue", str, bool)
@@ -36,6 +31,10 @@ class _BaseCaseMatch(ABC):
         :type distance_matrix: skbio.DistanceMatrix
         """
         self.case_control_map = case_control_map
+        cases = set(case_control_map.keys())
+        controls = reduce(lambda x, y: x.union(y), case_control_map.values())
+        if distance_matrix is not None:
+            _validate_distance_matrix(cases, controls, distance_matrix)
         self.metadata = metadata
         self.distance_matrix = distance_matrix
 
@@ -119,7 +118,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         for i, (case, controls) in enumerate(ordered_ccm):
             if set(controls).issubset(used_controls):
                 remaining = [x[0] for x in ordered_ccm[i:]]
-                raise NoMoreControlsError(remaining)
+                raise exc.NoMoreControlsError(remaining)
             not_used = list(set(controls) - used_controls)
             random_match = rng.choice(not_used)
             case_controls.append(random_match)
@@ -148,14 +147,14 @@ class CaseMatchOneToOne(_BaseCaseMatch):
         :type distance_matrix: skbio.DistanceMatrix
         """
         if not _check_one_to_one(case_control_map):
-            raise NotOneToOneError(case_control_map)
+            raise exc.NotOneToOneError(case_control_map)
         super().__init__(case_control_map, metadata, distance_matrix)
 
     @classmethod
     def load_mapping(cls, path: str) -> "CaseMatchOneToOne":
         cm = _load_mapping(path)
         if not _check_one_to_one(cm):
-            raise NotOneToOneError(cm)
+            raise exc.NotOneToOneError(cm)
         return cls(cm)
 
 
@@ -189,11 +188,11 @@ def match_by_single(
     :rtype: qupid.CaseMatchOneToMany
     """
     if set(focus.index) & set(background.index):
-        raise IntersectingSamplesError(focus.index, background.index)
+        raise exc.IntersectingSamplesError(focus.index, background.index)
 
     if category_type == "discrete":
         if not _do_category_values_overlap(focus, background):
-            raise DisjointCategoryValuesError(focus, background)
+            raise exc.DisjointCategoryValuesError(focus, background)
         matcher = _match_discrete
     elif category_type == "continuous":
         # Only want to pass tolerance if continuous category
@@ -211,7 +210,7 @@ def match_by_single(
             matches[f_idx] = set(background.index[hits])
         else:
             if on_failure == "raise":
-                raise NoMatchesError(f_idx)
+                raise exc.NoMatchesError(f_idx)
             else:
                 matches[f_idx] = set()
 
@@ -250,11 +249,11 @@ def match_by_multiple(
     :rtype: qupid.CaseMatchOneToMany
     """
     if not _are_categories_subset(category_type_map, focus):
-        raise MissingCategoriesError(category_type_map, "focus", focus)
+        raise exc.MissingCategoriesError(category_type_map, "focus", focus)
 
     if not _are_categories_subset(category_type_map, background):
-        raise MissingCategoriesError(category_type_map, "background",
-                                     background)
+        raise exc.MissingCategoriesError(category_type_map, "background",
+                                         background)
 
     if tolerance_map is None:
         tolerance_map = dict()
@@ -270,7 +269,7 @@ def match_by_multiple(
             # Reduce the matches with successive categories
             matches[fidx] = matches[fidx] & fhits
             if not matches[fidx] and on_failure == "raise":
-                raise NoMoreControlsError()
+                raise exc.NoMoreControlsError()
 
     metadata = pd.concat([focus, background])
     return CaseMatchOneToMany(matches, metadata)
@@ -364,3 +363,13 @@ def _load_mapping(path: str) -> Dict[str, set]:
 def _check_one_to_one(case_control_map: dict) -> bool:
     """Check if mapping dict is one-to-one (one control per case)."""
     return all([len(ctrls) == 1 for ctrls in case_control_map.values()])
+
+
+def _validate_distance_matrix(cases: set, controls: set,
+                              dm: DistanceMatrix) -> None:
+    """Check to see if all cases and controls in DistanceMatrix."""
+    cc_samples = cases.union(controls)
+    dm_samples = set(dm.ids)
+    missing_samples = cc_samples.difference(dm_samples)
+    if missing_samples:
+        raise exc.MissingSamplesInDistanceMatrixError(missing_samples)

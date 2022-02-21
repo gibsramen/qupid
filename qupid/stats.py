@@ -1,8 +1,8 @@
 import pandas as pd
 from skbio.stats.distance import permanova
 
-from .exceptions import NoDistanceMatrixError
-from .matching import CaseMatchOneToOne
+from qupid.exceptions import NoDistanceMatrixError
+from qupid.matching import CaseMatchOneToOne
 
 
 def case_control_permanova(case_match: CaseMatchOneToOne,
