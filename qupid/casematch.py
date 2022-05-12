@@ -2,12 +2,14 @@ from abc import ABC, abstractmethod
 from functools import partial, reduce
 import json
 from typing import Dict, Set, Union
+from warnings import warn
 
-import numpy as np
+import networkx as nx
 import pandas as pd
 from skbio import DistanceMatrix
 
 from qupid import _exceptions as exc
+from qupid.matching import hopcroft_karp_matching
 import qupid._casematch_utils as util
 
 
@@ -93,41 +95,32 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         return cls(cm)
 
     # https://www.python.org/dev/peps/pep-0484/#forward-references
-    def greedy_match(self, seed: float = None) -> "CaseMatchOneToOne":
-        """Pick controls for each case by naive greedy algorithm.
+    def create_matched_pairs(self, strict=True) -> "CaseMatchOneToOne":
+        """Pick controls for each case.
 
         NOTE: Can probably improve algorithm with "best" match from tolerance
               in the case of continuous. Later on could account for ordinal
               relationships but that's likely a ways off.
 
-        :param seed: Random seed for greedy matching (optional)
-        :type seed: float
+        :param strict: Whether to perform strict matching. If True, will throw
+            an error if a maximum matching is not found. Otherwise will raise a
+            warning. Defaults to True.
+        :type strict: bool
 
         :returns: New CaseMatch object with only one control per case
         :rtype: qupid.CaseMatchOneToOne
         """
-        rng = np.random.default_rng(seed)
+        G = nx.Graph(self.case_control_map)
+        M = hopcroft_karp_matching(G, top_nodes=self.cases)
+        M = {k: {v} for k, v in M.items()}  # Convert to set instead of string
+        if len(M) != len(self.case_control_map):
+            missing = set(self.cases).difference(M.keys())
+            if strict:
+                raise exc.NoMoreControlsError(missing)
+            else:
+                warn("Some cases were not matched to a control.", UserWarning)
 
-        # Sort from smallest to largest number of matches
-        ordered_ccm = sorted(self.case_control_map.items(),
-                             key=lambda x: len(x[1]))
-
-        used_controls = set()
-        case_controls = []
-        greedy_map = dict()
-        for i, (case, controls) in enumerate(ordered_ccm):
-            if set(controls).issubset(used_controls):
-                remaining = [x[0] for x in ordered_ccm[i:]]
-                raise exc.NoMoreControlsError(remaining)
-            not_used = list(set(controls) - used_controls)
-            random_match = rng.choice(not_used)
-            case_controls.append(random_match)
-            used_controls.add(random_match)
-
-            greedy_map[case] = {random_match}
-
-        return CaseMatchOneToOne(greedy_map, self.metadata,
-                                 self.distance_matrix)
+        return CaseMatchOneToOne(M, self.metadata, self.distance_matrix)
 
 
 class CaseMatchOneToOne(_BaseCaseMatch):

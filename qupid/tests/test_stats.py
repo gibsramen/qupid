@@ -14,7 +14,7 @@ import qupid.stats as stats
 def case_match_one_to_one_mock():
     json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
     cm = CaseMatchOneToMany.load_mapping(json_in)
-    greedy_cm = cm.greedy_match()
+    greedy_cm = cm.create_matched_pairs()
 
     num_samples = len(greedy_cm.cases) + len(greedy_cm.controls)
     rng = np.random.default_rng(42)

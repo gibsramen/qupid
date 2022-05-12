@@ -107,7 +107,7 @@ class TestErrors:
         assert exc_info.value.missing_categories == {"cat_3"}
         assert "background" in str(exc_info.value)
 
-    def test_no_more_controls(self):
+    def test_no_more_controls_strict(self):
         data = {
             "S0A": {"S0B", "S1B", "S2B"},
             "S1A": {"S1B", "S2B", "S3B"},
@@ -117,12 +117,24 @@ class TestErrors:
         }
         match = mm.CaseMatchOneToMany(data)
         with pytest.raises(mexc.NoMoreControlsError) as exc_info:
-            match.greedy_match()
+            match.create_matched_pairs()
 
-        # Should fail on S3A after S4A & S2A
-        exp_remaining = {"S0A", "S1A", "S3A"}
-        actual_remaining = set(exc_info.value.remaining)
-        assert exp_remaining == actual_remaining
+
+    def test_no_more_controls_no_strict(self):
+        data = {
+            "S0A": {"S0B", "S1B", "S2B"},
+            "S1A": {"S1B", "S2B", "S3B"},
+            "S2A": {"S4B"},
+            "S3A": {"S4B", "S5B"},
+            "S4A": {"S5B"}
+        }
+        match = mm.CaseMatchOneToMany(data)
+        with pytest.warns(UserWarning) as warn_info:
+            match.create_matched_pairs(strict=False)
+
+        exp_msg = "Some cases were not matched to a control."
+        assert str(warn_info[0].message) == exp_msg
+
 
     def test_multiple_no_tol_map(self):
         focus_cat_1 = ["A", "B", "C", "B", "C"]
@@ -280,10 +292,10 @@ class TestCaseMatch:
         exp_cases = set(s1.index)
         assert match.cases == exp_cases
 
-    def test_greedy_match(self):
+    def test_create_matched_pairs(self):
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
         match = mm.CaseMatchOneToMany.load_mapping(json_in)
-        greedy_cm = match.greedy_match()
+        greedy_cm = match.create_matched_pairs()
 
         assert isinstance(greedy_cm, mm.CaseMatchOneToOne)
         assert len(greedy_cm.cases) == 6

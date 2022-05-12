@@ -24,6 +24,7 @@ def simple_graph():
 
     G.add_edge("3", "A")
     G.add_edge("3", "B")
+
     return G
 
 
