@@ -14,6 +14,8 @@ import qupid._casematch_utils as util
 
 
 class _BaseCaseMatch(ABC):
+    __slots__ = "case_control_map", "metadata", "distance_matrix"
+
     def __init__(self, case_control_map: Dict[str, set],
                  metadata: Union[pd.Series, pd.DataFrame] = None,
                  distance_matrix: DistanceMatrix = None):
@@ -95,12 +97,16 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         return cls(cm)
 
     # https://www.python.org/dev/peps/pep-0484/#forward-references
-    def create_matched_pairs(self, strict=True) -> "CaseMatchOneToOne":
-        """Pick controls for each case.
+    def create_matched_pairs(self, iterations: int = 10,
+                             strict: bool = True) -> "CaseMatchOneToOne":
+        """Create multiple matched pairs of cases to controls.
 
         NOTE: Can probably improve algorithm with "best" match from tolerance
               in the case of continuous. Later on could account for ordinal
               relationships but that's likely a ways off.
+
+        :param iterations: Number of iterations to run, defaults to 10
+        :type iterations: int
 
         :param strict: Whether to perform strict matching. If True, will throw
             an error if a maximum matching is not found. Otherwise will raise a
@@ -110,17 +116,45 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         :returns: New CaseMatch object with only one control per case
         :rtype: qupid.CaseMatchOneToOne
         """
+        all_matches = set()
         G = nx.Graph(self.case_control_map)
-        M = hopcroft_karp_matching(G, top_nodes=self.cases)
-        M = {k: {v} for k, v in M.items()}  # Convert to set instead of string
-        if len(M) != len(self.case_control_map):
-            missing = set(self.cases).difference(M.keys())
+        for i in range(iterations):
+            M = self._create_matched_pairs_single(G, cases=self.cases,
+                                                  strict=strict)
+            cm = CaseMatchOneToOne(M, self.metadata, self.distance_matrix)
+            # matched_pairs = frozenset(tuple((x, M[x]) for x in M))
+            all_matches.add(cm)
+
+        return all_matches
+
+    @staticmethod
+    def _create_matched_pairs_single(G, cases: set = None,
+                                     strict: bool = True) -> dict:
+        """Create a single matched pair of cases to controls.
+
+        :param G: Bipartite graph on which to perform matching
+        :type G: nx.Graph
+
+        :param cases: Cases in graph
+        :type cases: set
+
+        :param strict: Whether to perform strict matching. If True, will throw
+            an error if a maximum matching is not found. Otherwise will raise a
+            warning. Defaults to True.
+        :type strict: bool
+
+        :returns: Mapping of case to single control (set)
+        :rtype: dict
+        """
+        M = hopcroft_karp_matching(G, top_nodes=cases)
+        M = {k: {v} for k, v in M.items()}
+        if len(M) != len(cases):
+            missing = set(cases).difference(M.keys())
             if strict:
                 raise exc.NoMoreControlsError(missing)
             else:
                 warn("Some cases were not matched to a control.", UserWarning)
-
-        return CaseMatchOneToOne(M, self.metadata, self.distance_matrix)
+        return M
 
 
 class CaseMatchOneToOne(_BaseCaseMatch):
@@ -149,6 +183,11 @@ class CaseMatchOneToOne(_BaseCaseMatch):
         if not util._check_one_to_one(cm):
             raise exc.NotOneToOneError(cm)
         return cls(cm)
+
+    def __hash__(self):
+        return hash(frozenset(
+            (k, v.pop()) for k, v in self.case_control_map.items()
+        ))
 
 
 def match_by_single(

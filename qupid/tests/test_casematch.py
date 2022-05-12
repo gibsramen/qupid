@@ -1,6 +1,7 @@
 import json
 import os
 
+import networkx as nx
 import numpy as np
 import pandas as pd
 import pytest
@@ -292,14 +293,15 @@ class TestCaseMatch:
         exp_cases = set(s1.index)
         assert match.cases == exp_cases
 
-    def test_create_matched_pairs(self):
+    def test_create_matched_pairs_single(self):
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
         match = mm.CaseMatchOneToMany.load_mapping(json_in)
-        greedy_cm = match.create_matched_pairs()
+        G = nx.Graph(match.case_control_map)
+        matched_pairs = match._create_matched_pairs_single(G, cases=match.cases)
 
-        assert isinstance(greedy_cm, mm.CaseMatchOneToOne)
-        assert len(greedy_cm.cases) == 6
-        assert len(greedy_cm.controls) == 6
+        assert len(matched_pairs) == 6
+        ctrl_lens = [len(v) == 1 for k, v in matched_pairs.items()]
+        assert all(ctrl_lens)
 
     def test_on_failure_ignore(self):
         s1 = pd.Series([1, 2, 3, 4, 5, 6, 7, 8, 100])
