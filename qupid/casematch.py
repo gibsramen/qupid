@@ -122,7 +122,6 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             M = self._create_matched_pairs_single(G, cases=self.cases,
                                                   strict=strict)
             cm = CaseMatchOneToOne(M, self.metadata, self.distance_matrix)
-            # matched_pairs = frozenset(tuple((x, M[x]) for x in M))
             all_matches.add(cm)
 
         return all_matches
