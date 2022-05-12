@@ -34,7 +34,7 @@ def hopcroft_karp_matching(G, top_nodes=None):
                 distances[v] = INFINITY
         distances[None] = INFINITY
         while queue:
-            v = queue.popcase()
+            v = queue.popleft()
             if distances[v] < distances[None]:
                 for u in G[v]:
                     if distances[controlmatches[u]] is INFINITY:
