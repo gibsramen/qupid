@@ -1,17 +1,14 @@
 from abc import ABC, abstractmethod
 from functools import partial, reduce
 import json
-from typing import Dict, Sequence, Set, TypeVar, Union
+from typing import Dict, Set, Union
 
 import numpy as np
 import pandas as pd
 from skbio import DistanceMatrix
 
 from qupid import _exceptions as exc
-
-
-DiscreteValue = TypeVar("DiscreteValue", str, bool)
-ContinuousValue = TypeVar("ContinuousValue", float, int)
+import qupid._casematch_utils as util
 
 
 class _BaseCaseMatch(ABC):
@@ -34,7 +31,7 @@ class _BaseCaseMatch(ABC):
         cases = set(case_control_map.keys())
         controls = reduce(lambda x, y: x.union(y), case_control_map.values())
         if distance_matrix is not None:
-            _validate_distance_matrix(cases, controls, distance_matrix)
+            util._validate_distance_matrix(cases, controls, distance_matrix)
         self.metadata = metadata
         self.distance_matrix = distance_matrix
 
@@ -92,7 +89,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
 
     @classmethod
     def load_mapping(cls, path: str) -> "CaseMatchOneToMany":
-        cm = _load_mapping(path)
+        cm = util._load_mapping(path)
         return cls(cm)
 
     # https://www.python.org/dev/peps/pep-0484/#forward-references
@@ -149,14 +146,14 @@ class CaseMatchOneToOne(_BaseCaseMatch):
             controls (optional)
         :type distance_matrix: skbio.DistanceMatrix
         """
-        if not _check_one_to_one(case_control_map):
+        if not util._check_one_to_one(case_control_map):
             raise exc.NotOneToOneError(case_control_map)
         super().__init__(case_control_map, metadata, distance_matrix)
 
     @classmethod
     def load_mapping(cls, path: str) -> "CaseMatchOneToOne":
-        cm = _load_mapping(path)
-        if not _check_one_to_one(cm):
+        cm = util._load_mapping(path)
+        if not util._check_one_to_one(cm):
             raise exc.NotOneToOneError(cm)
         return cls(cm)
 
@@ -194,12 +191,12 @@ def match_by_single(
         raise exc.IntersectingSamplesError(focus.index, background.index)
 
     if category_type == "discrete":
-        if not _do_category_values_overlap(focus, background):
+        if not util._do_category_values_overlap(focus, background):
             raise exc.DisjointCategoryValuesError(focus, background)
-        matcher = _match_discrete
+        matcher = util._match_discrete
     elif category_type == "continuous":
         # Only want to pass tolerance if continuous category
-        matcher = partial(_match_continuous, tolerance=tolerance)
+        matcher = partial(util._match_continuous, tolerance=tolerance)
     else:
         raise ValueError(
             "category_type must be 'continuous' or 'discrete'. "
@@ -251,10 +248,10 @@ def match_by_multiple(
     :returns: Matched control samples
     :rtype: qupid.CaseMatchOneToMany
     """
-    if not _are_categories_subset(category_type_map, focus):
+    if not util._are_categories_subset(category_type_map, focus):
         raise exc.MissingCategoriesError(category_type_map, "focus", focus)
 
-    if not _are_categories_subset(category_type_map, background):
+    if not util._are_categories_subset(category_type_map, background):
         raise exc.MissingCategoriesError(category_type_map, "background",
                                          background)
 
@@ -276,103 +273,3 @@ def match_by_multiple(
 
     metadata = pd.concat([focus, background])
     return CaseMatchOneToMany(matches, metadata)
-
-
-def _do_category_values_overlap(
-    focus: pd.Series, background: pd.Series
-) -> bool:
-    """Check to make sure discrete category values overlap.
-
-    :param focus: Samples to be matched
-    :type focus: pd.Series
-
-    :param background: Metadata to match against
-    :type background: pd.Series
-
-    :returns: True if there are overlaps, False otherwise
-    :rtype: bool
-    """
-    intersection = set(focus.unique()) & set(background.unique())
-    return bool(intersection)
-
-
-def _are_categories_subset(category_map: dict, target: pd.DataFrame) -> bool:
-    """Check to make sure all categories in map are in target DataFrame.
-
-    :param category_map: Mapping of category names as keys
-    :type category_map: dict
-
-    :param target: DataFrame to interrogate for categories
-    :type target: pd.DataFrame
-
-    :returns: True if all categories are present in target, False otherwise
-    :rtype: bool
-    """
-    return set(category_map.keys()).issubset(target.columns)
-
-
-def _match_continuous(
-    focus_value: ContinuousValue,
-    background_values: Sequence[ContinuousValue],
-    tolerance: float,
-) -> np.ndarray:
-    """Find matches to a given float value within tolerance.
-
-    :param focus_value: Value to be matched
-    :type focus_value: str, bool
-
-    :param background_values: Values in which to search for matches
-    :type background_values: Sequence
-
-    :param tolerance: Tolerance with which to evaluate matches
-    :type tolerance: float
-
-    :returns: Binary array of matches
-    :rtype: np.ndarray
-    """
-    return np.isclose(background_values, focus_value, atol=tolerance)
-
-
-def _match_discrete(
-    focus_value: DiscreteValue,
-    background_values: Sequence[DiscreteValue],
-) -> np.ndarray:
-    """Find matches to a given discrete value.
-
-    :param focus_value: Value to be matched
-    :type focus_value: str
-
-    :param background_values: Values in which to search for matches
-    :type background_values: Sequence
-
-    :returns: Binary array of matches
-    :rtype: np.ndarray
-    """
-    return np.array(focus_value == background_values)
-
-
-def _load_mapping(path: str) -> Dict[str, set]:
-    """Load mapping file from JSON as dict.
-
-    :param path: Location of filepath
-    :type path: str
-    """
-    with open(path, "r") as f:
-        ccm = json.load(f)
-    ccm = {k: set(v) for k, v in ccm.items()}
-    return ccm
-
-
-def _check_one_to_one(case_control_map: dict) -> bool:
-    """Check if mapping dict is one-to-one (one control per case)."""
-    return all([len(ctrls) == 1 for ctrls in case_control_map.values()])
-
-
-def _validate_distance_matrix(cases: set, controls: set,
-                              dm: DistanceMatrix) -> None:
-    """Check to see if all cases and controls in DistanceMatrix."""
-    cc_samples = cases.union(controls)
-    dm_samples = set(dm.ids)
-    missing_samples = cc_samples.difference(dm_samples)
-    if missing_samples:
-        raise exc.MissingSamplesInDistanceMatrixError(missing_samples)

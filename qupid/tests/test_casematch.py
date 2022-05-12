@@ -7,7 +7,7 @@ import pytest
 from skbio import DistanceMatrix
 
 import qupid._exceptions as mexc
-import qupid.matching as mm
+import qupid.casematch as mm
 
 
 class TestErrors:
@@ -176,25 +176,6 @@ class TestErrors:
         )
         assert exp_msg in str(exc_info.value)
         assert exc_info.value.missing_samples == {"S5B", "S2B", "S3B"}
-
-
-class TestMatchers:
-    def test_match_continuous(self):
-        focus_value = 1.0
-        background_values = np.array([1.0, 2.0, 0.1, 0.5, 2.1, -0.1])
-        tol = 1.0
-        exp_hits = np.array([True, True, True, True, False, False])
-
-        hits = mm._match_continuous(focus_value, background_values, tol)
-        assert (exp_hits == hits).all()
-
-    def test_match_discrete(self):
-        focus_value = "a"
-        background_values = np.array(["a", "b", "c", "a", "a"])
-        exp_hits = np.array([True, False, False, True, True])
-
-        hits = mm._match_discrete(focus_value, background_values)
-        assert (exp_hits == hits).all()
 
 
 class TestCaseMatch:
