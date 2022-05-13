@@ -27,8 +27,6 @@ class _BaseCaseMatch(ABC):
         :type metadata: pd.Series or pd.DataFrame
         """
         self.case_control_map = case_control_map
-        cases = set(case_control_map.keys())
-        controls = reduce(lambda x, y: x.union(y), case_control_map.values())
         self.metadata = metadata
 
     @property
@@ -128,7 +126,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             for i in range(iterations)
         )
 
-        return list(set(all_matches))
+        return CaseMatchCollection(list(set(all_matches)))
 
     @staticmethod
     def _create_matched_pairs_single(G, cases: set = None,
@@ -181,6 +179,16 @@ class CaseMatchOneToOne(_BaseCaseMatch):
         if not util._check_one_to_one(cm):
             raise exc.NotOneToOneError(cm)
         return cls(cm)
+
+    def to_series(self):
+        match_tuples = (
+            map(
+                lambda y: (y[0], list(y[1])[0]),
+                self.case_control_map.items()
+            )
+        )  # (case, control)
+        cases, controls = zip(*match_tuples)
+        return pd.Series(controls, index=cases)
 
     def __hash__(self):
         return hash(frozenset(
@@ -303,6 +311,34 @@ def match_by_multiple(
 
     metadata = pd.concat([focus, background])
     return CaseMatchOneToMany(matches, metadata)
+
+
+class CaseMatchCollection:
+    def __init__(self, case_matches: List[CaseMatchOneToOne] = None):
+        self.case_matches = case_matches
+
+    def to_dataframe(self):
+        match_series = [x.to_series() for x in self.case_matches]
+        df = pd.concat(match_series, axis=1)
+        df.index.name = "case_id"
+        return df
+
+    def __next__(self):
+        if self._n >= len(self.case_matches):
+            raise StopIteration
+        cm = self.case_matches[self._n]
+        self._n += 1
+        return cm
+
+    def __iter__(self):
+        self._n = 0
+        return self
+
+    def __len__(self):
+        return len(self.case_matches)
+
+    def __getitem__(self, index):
+        return self.case_matches[index]
 
 
 def _get_cm(cm, G, strict):
