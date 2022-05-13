@@ -300,7 +300,6 @@ class TestCaseMatch:
         # Should be 36
         assert len(all_matched_pairs) == 36
 
-
     def test_create_matched_pairs_single(self):
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
         match = mm.CaseMatchOneToMany.load_mapping(json_in)
