@@ -124,7 +124,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             cm = CaseMatchOneToOne(M, self.metadata, self.distance_matrix)
             all_matches.add(cm)
 
-        return all_matches
+        return list(all_matches)
 
     @staticmethod
     def _create_matched_pairs_single(G, cases: set = None,
@@ -185,7 +185,7 @@ class CaseMatchOneToOne(_BaseCaseMatch):
 
     def __hash__(self):
         return hash(frozenset(
-            (k, v.pop()) for k, v in self.case_control_map.items()
+            (k, list(v)[0]) for k, v in self.case_control_map.items()
         ))
 
 
