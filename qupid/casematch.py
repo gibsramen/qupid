@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import partial, reduce
 import json
-from typing import Dict, Set, Union
+from typing import Dict, Set, Union, List
 from warnings import warn
 
 import networkx as nx
@@ -98,7 +98,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
 
     # https://www.python.org/dev/peps/pep-0484/#forward-references
     def create_matched_pairs(self, iterations: int = 10,
-                             strict: bool = True) -> "CaseMatchOneToOne":
+                             strict: bool = True) -> List["CaseMatchOneToOne"]:
         """Create multiple matched pairs of cases to controls.
 
         NOTE: Can probably improve algorithm with "best" match from tolerance
