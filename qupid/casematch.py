@@ -4,6 +4,7 @@ import json
 from typing import Dict, Set, Union, List
 from warnings import warn
 
+from joblib import Parallel, delayed
 import networkx as nx
 import pandas as pd
 from skbio import DistanceMatrix
@@ -97,8 +98,13 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         return cls(cm)
 
     # https://www.python.org/dev/peps/pep-0484/#forward-references
-    def create_matched_pairs(self, iterations: int = 10,
-                             strict: bool = True) -> List["CaseMatchOneToOne"]:
+    def create_matched_pairs(
+        self,
+        iterations: int = 10,
+        strict: bool = True,
+        n_jobs: int = 1,
+        parallel_args: dict = None
+    ) -> List["CaseMatchOneToOne"]:
         """Create multiple matched pairs of cases to controls.
 
         NOTE: Can probably improve algorithm with "best" match from tolerance
@@ -113,18 +119,30 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             warning. Defaults to True.
         :type strict: bool
 
+        :param n_jobs: Number of jobs to run in parallel, defaults to None
+            (single CPU)
+        :type n_jobs: int
+
+        :param parallel_args: Dictionary of arguments to be passed into
+            joblib.Parallel. See the documentation for this class at
+            https://joblib.readthedocs.io/en/latest/generated/joblib.Parallel.html
+        :type parallel_args: dict
+
         :returns: New CaseMatch object with only one control per case
         :rtype: qupid.CaseMatchOneToOne
         """
+        if parallel_args is None:
+            parallel_args = dict()
+
         all_matches = set()
         G = nx.Graph(self.case_control_map)
-        for i in range(iterations):
-            M = self._create_matched_pairs_single(G, cases=self.cases,
-                                                  strict=strict)
-            cm = CaseMatchOneToOne(M, self.metadata, self.distance_matrix)
-            all_matches.add(cm)
 
-        return list(all_matches)
+        all_matches = Parallel(n_jobs=n_jobs, **parallel_args)(
+            delayed(_get_cm)(self, G, strict)
+            for i in range(iterations)
+        )
+
+        return list(set(all_matches))
 
     @staticmethod
     def _create_matched_pairs_single(G, cases: set = None,
@@ -304,3 +322,10 @@ def match_by_multiple(
 
     metadata = pd.concat([focus, background])
     return CaseMatchOneToMany(matches, metadata)
+
+
+def _get_cm(cm, G, strict):
+    M = cm._create_matched_pairs_single(G, cases=cm.cases,
+                                        strict=strict)
+    cm = CaseMatchOneToOne(M, cm.metadata, cm.distance_matrix)
+    return cm
