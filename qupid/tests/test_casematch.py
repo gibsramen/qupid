@@ -5,7 +5,6 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pytest
-from skbio import DistanceMatrix
 
 import qupid._exceptions as mexc
 import qupid.casematch as mm
@@ -174,21 +173,6 @@ class TestErrors:
 
         exp_msg = "The following cases are not one-to-one: ['S1A', 'S2A']"
         assert str(exc_info1.value) == str(exc_info2.value) == exp_msg
-
-    def test_missing_samples_dm(self):
-        ccm = {"S1A": {"S2B", "S3B"}, "S2A": {"S1B", "S4B"}, "S3A": {"S5B"}}
-        dm = DistanceMatrix(np.zeros([5, 5]))
-        dm.ids = ("S1A", "S2A", "S3A", "S1B", "S4B")
-
-        err = mexc.MissingSamplesInDistanceMatrixError
-        with pytest.raises(err) as exc_info:
-            mm.CaseMatchOneToMany(ccm, distance_matrix=dm)
-
-        exp_msg = (
-            "The following samples are missing from the DistanceMatrix: "
-        )
-        assert exp_msg in str(exc_info.value)
-        assert exc_info.value.missing_samples == {"S5B", "S2B", "S3B"}
 
 
 class TestCaseMatch:
