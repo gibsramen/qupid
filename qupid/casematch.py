@@ -1,17 +1,22 @@
 from abc import ABC, abstractmethod
 from functools import partial, reduce
 import json
-from typing import Dict, Set, Union
+from typing import Dict, Set, Union, List
+from warnings import warn
 
-import numpy as np
+from joblib import Parallel, delayed
+import networkx as nx
 import pandas as pd
 from skbio import DistanceMatrix
 
 from qupid import _exceptions as exc
+from qupid.matching import hopcroft_karp_matching
 import qupid._casematch_utils as util
 
 
 class _BaseCaseMatch(ABC):
+    __slots__ = "case_control_map", "metadata", "distance_matrix"
+
     def __init__(self, case_control_map: Dict[str, set],
                  metadata: Union[pd.Series, pd.DataFrame] = None,
                  distance_matrix: DistanceMatrix = None):
@@ -93,41 +98,80 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         return cls(cm)
 
     # https://www.python.org/dev/peps/pep-0484/#forward-references
-    def greedy_match(self, seed: float = None) -> "CaseMatchOneToOne":
-        """Pick controls for each case by naive greedy algorithm.
+    def create_matched_pairs(
+        self,
+        iterations: int = 10,
+        strict: bool = True,
+        n_jobs: int = 1,
+        parallel_args: dict = None
+    ) -> List["CaseMatchOneToOne"]:
+        """Create multiple matched pairs of cases to controls.
 
         NOTE: Can probably improve algorithm with "best" match from tolerance
               in the case of continuous. Later on could account for ordinal
               relationships but that's likely a ways off.
 
-        :param seed: Random seed for greedy matching (optional)
-        :type seed: float
+        :param iterations: Number of iterations to run, defaults to 10
+        :type iterations: int
+
+        :param strict: Whether to perform strict matching. If True, will throw
+            an error if a maximum matching is not found. Otherwise will raise a
+            warning. Defaults to True.
+        :type strict: bool
+
+        :param n_jobs: Number of jobs to run in parallel, defaults to None
+            (single CPU)
+        :type n_jobs: int
+
+        :param parallel_args: Dictionary of arguments to be passed into
+            joblib.Parallel. See the documentation for this class at
+            https://joblib.readthedocs.io/en/latest/generated/joblib.Parallel.html
+        :type parallel_args: dict
 
         :returns: New CaseMatch object with only one control per case
         :rtype: qupid.CaseMatchOneToOne
         """
-        rng = np.random.default_rng(seed)
+        if parallel_args is None:
+            parallel_args = dict()
 
-        # Sort from smallest to largest number of matches
-        ordered_ccm = sorted(self.case_control_map.items(),
-                             key=lambda x: len(x[1]))
+        all_matches = set()
+        G = nx.Graph(self.case_control_map)
 
-        used_controls = set()
-        case_controls = []
-        greedy_map = dict()
-        for i, (case, controls) in enumerate(ordered_ccm):
-            if set(controls).issubset(used_controls):
-                remaining = [x[0] for x in ordered_ccm[i:]]
-                raise exc.NoMoreControlsError(remaining)
-            not_used = list(set(controls) - used_controls)
-            random_match = rng.choice(not_used)
-            case_controls.append(random_match)
-            used_controls.add(random_match)
+        all_matches = Parallel(n_jobs=n_jobs, **parallel_args)(
+            delayed(_get_cm)(self, G, strict)
+            for i in range(iterations)
+        )
 
-            greedy_map[case] = {random_match}
+        return list(set(all_matches))
 
-        return CaseMatchOneToOne(greedy_map, self.metadata,
-                                 self.distance_matrix)
+    @staticmethod
+    def _create_matched_pairs_single(G, cases: set = None,
+                                     strict: bool = True) -> dict:
+        """Create a single matched pair of cases to controls.
+
+        :param G: Bipartite graph on which to perform matching
+        :type G: nx.Graph
+
+        :param cases: Cases in graph
+        :type cases: set
+
+        :param strict: Whether to perform strict matching. If True, will throw
+            an error if a maximum matching is not found. Otherwise will raise a
+            warning. Defaults to True.
+        :type strict: bool
+
+        :returns: Mapping of case to single control (set)
+        :rtype: dict
+        """
+        M = hopcroft_karp_matching(G, top_nodes=cases)
+        M = {k: {v} for k, v in M.items()}
+        if len(M) != len(cases):
+            missing = set(cases).difference(M.keys())
+            if strict:
+                raise exc.NoMoreControlsError(missing)
+            else:
+                warn("Some cases were not matched to a control.", UserWarning)
+        return M
 
 
 class CaseMatchOneToOne(_BaseCaseMatch):
@@ -156,6 +200,11 @@ class CaseMatchOneToOne(_BaseCaseMatch):
         if not util._check_one_to_one(cm):
             raise exc.NotOneToOneError(cm)
         return cls(cm)
+
+    def __hash__(self):
+        return hash(frozenset(
+            (k, list(v)[0]) for k, v in self.case_control_map.items()
+        ))
 
 
 def match_by_single(
@@ -273,3 +322,10 @@ def match_by_multiple(
 
     metadata = pd.concat([focus, background])
     return CaseMatchOneToMany(matches, metadata)
+
+
+def _get_cm(cm, G, strict):
+    M = cm._create_matched_pairs_single(G, cases=cm.cases,
+                                        strict=strict)
+    cm = CaseMatchOneToOne(M, cm.metadata, cm.distance_matrix)
+    return cm
