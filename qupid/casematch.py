@@ -323,6 +323,15 @@ class CaseMatchCollection:
         df.index.name = "case_id"
         return df
 
+    @classmethod
+    def load(cls, path):
+        df = pd.read_table(path, sep="\t", index_col=0)
+        casematches = []
+        for col in df.columns:
+            mapping = {k: {v} for k, v in df[col].to_dict().items()}
+            casematches.append(CaseMatchOneToOne(mapping))
+        return cls(casematches)
+
     def __next__(self):
         if self._n >= len(self.case_matches):
             raise StopIteration
