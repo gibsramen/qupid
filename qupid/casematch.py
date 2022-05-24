@@ -103,7 +103,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             warning. Defaults to True.
         :type strict: bool
 
-        :param n_jobs: Number of jobs to run in parallel, defaults to None
+        :param n_jobs: Number of jobs to run in parallel, defaults to 1
             (single CPU)
         :type n_jobs: int
 
@@ -112,8 +112,8 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             https://joblib.readthedocs.io/en/latest/generated/joblib.Parallel.html
         :type parallel_args: dict
 
-        :returns: New CaseMatch object with only one control per case
-        :rtype: qupid.CaseMatchOneToOne
+        :returns: Collection of unique CaseMatchOneToOne objects
+        :rtype: qupid.CaseMatchCollection
         """
         if parallel_args is None:
             parallel_args = dict()
