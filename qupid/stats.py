@@ -43,7 +43,7 @@ def bulk_permanova(
         parallel_args = dict()
 
     pnova_results = Parallel(n_jobs=n_jobs, **parallel_args)(
-        delayed(_single_permanova)(cm, distance_matrix)
+        delayed(_single_permanova)(cm, distance_matrix, permutations)
         for cm in casematches
     )
     pnova_results = pd.DataFrame.from_records(pnova_results)
@@ -135,7 +135,7 @@ def _single_univariate_test(
     casematch: CaseMatchOneToOne,
     values: pd.Series,
     test_fn: Callable
-):
+) -> pd.Series:
     """Evaluate univariate test on single case-control mapping.
 
     :param casematch: Mapping of cases to controls
@@ -150,10 +150,8 @@ def _single_univariate_test(
     :returns: Test results
     :rtype: pd.Series
     """
-    cases = pd.Series("case", index=list(casematch.cases))
-    controls = pd.Series("control", index=list(casematch.controls))
-    case_vals = values.loc[cases]
-    ctrl_vals = values.loc[controls]
-    res = test_fn(ctrl_vals, case_vals)
+    case_vals = values.loc[list(casematch.cases)]
+    ctrl_vals = values.loc[list(casematch.controls)]
+    res = test_fn(case_vals, ctrl_vals)
     res = pd.Series(res, index=["test_statistic", "p-value"])
     return res
