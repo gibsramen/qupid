@@ -188,7 +188,7 @@ import seaborn as sns
 sns.histplot(test_results["p-value"])
 ```
 
-![p-value Historam](./imgs/asd_match_pvals.png)
+![p-value Histogram](./imgs/asd_match_pvals.png)
 
 We see that most of the p-values are near zero which makes sense because we simulated our data with a difference between ASD and non-ASD samples.
 
