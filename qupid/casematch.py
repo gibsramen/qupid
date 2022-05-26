@@ -43,15 +43,16 @@ class _BaseCaseMatch(ABC):
         return reduce(lambda x, y: x.union(y), ccm.values())
 
     @staticmethod
-    def _validate_input(case_control_map):
+    def _validate_input(case_control_map: dict) -> bool:
         def is_ctrl_set_valid(ctrls):
             return (
                 isinstance(ctrls, set) and
                 all(map(lambda x: isinstance(x, str), ctrls))
             )
 
-        cases_valid = map(lambda x: isinstance(x, str), case_control_map.keys())
-        ctrls_valid = map(is_ctrl_set_valid, case_control_map.values())
+        cases, ctrls = case_control_map.keys(), case_control_map.values()
+        cases_valid = map(lambda x: isinstance(x, str), cases)
+        ctrls_valid = map(is_ctrl_set_valid, ctrls)
         return all(cases_valid) and all(ctrls_valid)
 
     def save_mapping(self, path: str) -> None:
@@ -73,7 +74,7 @@ class _BaseCaseMatch(ABC):
     def __getitem__(self, case_name: str) -> set:
         return self.case_control_map[case_name]
 
-    def __eq__(self, other: "_BaseCaseMatch"):
+    def __eq__(self, other: "_BaseCaseMatch") -> bool:
         return self.case_control_map == other.case_control_map
 
 
@@ -194,7 +195,7 @@ class CaseMatchOneToOne(_BaseCaseMatch):
             raise exc.NotOneToOneError(cm)
         return cls(cm)
 
-    def to_series(self):
+    def to_series(self) -> pd.Series:
         match_tuples = (
             map(
                 lambda y: (y[0], list(y[1])[0]),
@@ -204,7 +205,7 @@ class CaseMatchOneToOne(_BaseCaseMatch):
         cases, controls = zip(*match_tuples)
         return pd.Series(controls, index=cases)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(frozenset(
             (k, list(v)[0]) for k, v in self.case_control_map.items()
         ))
@@ -336,14 +337,14 @@ class CaseMatchCollection:
             raise ValueError("Entries must all be of type CaseMatchOneToOne!")
         self.case_matches = case_matches
 
-    def to_dataframe(self):
+    def to_dataframe(self) -> pd.DataFrame:
         match_series = [x.to_series() for x in self.case_matches]
         df = pd.concat(match_series, axis=1)
         df.index.name = "case_id"
         return df
 
     @classmethod
-    def load(cls, path):
+    def load(cls, path) -> "CaseMatchCollection":
         df = pd.read_table(path, sep="\t", index_col=0)
         casematches = []
         for col in df.columns:
@@ -351,7 +352,7 @@ class CaseMatchCollection:
             casematches.append(CaseMatchOneToOne(mapping))
         return cls(casematches)
 
-    def save(self, path):
+    def save(self, path) -> None:
         df = self.to_dataframe()
         df.to_csv(path, sep="\t", index=True)
 
@@ -373,7 +374,7 @@ class CaseMatchCollection:
         return self.case_matches[index]
 
 
-def _get_cm(cm, G, strict):
+def _get_cm(cm, G, strict) -> CaseMatchOneToOne:
     M = cm._create_matched_pairs_single(G, cases=cm.cases,
                                         strict=strict)
     cm = CaseMatchOneToOne(M, cm.metadata)
