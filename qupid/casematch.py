@@ -7,7 +7,6 @@ from warnings import warn
 from joblib import Parallel, delayed
 import networkx as nx
 import pandas as pd
-from skbio import DistanceMatrix
 
 from qupid import _exceptions as exc
 from qupid.matching import hopcroft_karp_matching
@@ -15,11 +14,10 @@ import qupid._casematch_utils as util
 
 
 class _BaseCaseMatch(ABC):
-    __slots__ = "case_control_map", "metadata", "distance_matrix"
+    __slots__ = "case_control_map", "metadata"
 
     def __init__(self, case_control_map: Dict[str, set],
-                 metadata: Union[pd.Series, pd.DataFrame] = None,
-                 distance_matrix: DistanceMatrix = None):
+                 metadata: Union[pd.Series, pd.DataFrame] = None):
         """Base class storing case-control data & metadata.
 
         :param case_control_map: Dict of cases to sets of controls
@@ -27,18 +25,11 @@ class _BaseCaseMatch(ABC):
 
         :param metadata: Metadata associated with cases & controls (optional)
         :type metadata: pd.Series or pd.DataFrame
-
-        :param distance_matrix: Beta-diversity distance matrix of cases and
-            controls (optional)
-        :type distance_matrix: skbio.DistanceMatrix
         """
+        if not self._validate_input(case_control_map):
+            raise ValueError("Invalid input!")
         self.case_control_map = case_control_map
-        cases = set(case_control_map.keys())
-        controls = reduce(lambda x, y: x.union(y), case_control_map.values())
-        if distance_matrix is not None:
-            util._validate_distance_matrix(cases, controls, distance_matrix)
         self.metadata = metadata
-        self.distance_matrix = distance_matrix
 
     @property
     def cases(self) -> Set[str]:
@@ -50,6 +41,19 @@ class _BaseCaseMatch(ABC):
         """Get names of all controls."""
         ccm = self.case_control_map
         return reduce(lambda x, y: x.union(y), ccm.values())
+
+    @staticmethod
+    def _validate_input(case_control_map: dict) -> bool:
+        def is_ctrl_set_valid(ctrls):
+            return (
+                isinstance(ctrls, set) and
+                all(map(lambda x: isinstance(x, str), ctrls))
+            )
+
+        cases, ctrls = case_control_map.keys(), case_control_map.values()
+        cases_valid = map(lambda x: isinstance(x, str), cases)
+        ctrls_valid = map(is_ctrl_set_valid, ctrls)
+        return all(cases_valid) and all(ctrls_valid)
 
     def save_mapping(self, path: str) -> None:
         """Saves case-control mapping to file as JSON.
@@ -64,20 +68,19 @@ class _BaseCaseMatch(ABC):
 
     @classmethod
     @abstractmethod
-    def load_mapping(cls, path: str):
+    def load(cls, path: str):
         """Create CaseMatch object from JSON file."""
 
     def __getitem__(self, case_name: str) -> set:
         return self.case_control_map[case_name]
 
-    def __eq__(self, other: "_BaseCaseMatch"):
+    def __eq__(self, other: "_BaseCaseMatch") -> bool:
         return self.case_control_map == other.case_control_map
 
 
 class CaseMatchOneToMany(_BaseCaseMatch):
     def __init__(self, case_control_map: Dict[str, set],
-                 metadata: Union[pd.Series, pd.DataFrame] = None,
-                 distance_matrix: DistanceMatrix = None):
+                 metadata: Union[pd.Series, pd.DataFrame] = None):
         """Case match object for mapping one case to multiple controls.
 
         :param case_control_map: Dict of cases to sets of controls
@@ -85,16 +88,12 @@ class CaseMatchOneToMany(_BaseCaseMatch):
 
         :param metadata: Metadata associated with cases & controls (optional)
         :type metadata: pd.Series or pd.DataFrame
-
-        :param distance_matrix: Beta-diversity distance matrix of cases and
-            controls (optional)
-        :type distance_matrix: skbio.DistanceMatrix
         """
-        super().__init__(case_control_map, metadata, distance_matrix)
+        super().__init__(case_control_map, metadata)
 
     @classmethod
-    def load_mapping(cls, path: str) -> "CaseMatchOneToMany":
-        cm = util._load_mapping(path)
+    def load(cls, path: str) -> "CaseMatchOneToMany":
+        cm = util._load(path)
         return cls(cm)
 
     # https://www.python.org/dev/peps/pep-0484/#forward-references
@@ -119,7 +118,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             warning. Defaults to True.
         :type strict: bool
 
-        :param n_jobs: Number of jobs to run in parallel, defaults to None
+        :param n_jobs: Number of jobs to run in parallel, defaults to 1
             (single CPU)
         :type n_jobs: int
 
@@ -128,8 +127,8 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             https://joblib.readthedocs.io/en/latest/generated/joblib.Parallel.html
         :type parallel_args: dict
 
-        :returns: New CaseMatch object with only one control per case
-        :rtype: qupid.CaseMatchOneToOne
+        :returns: Collection of unique CaseMatchOneToOne objects
+        :rtype: qupid.CaseMatchCollection
         """
         if parallel_args is None:
             parallel_args = dict()
@@ -142,7 +141,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             for i in range(iterations)
         )
 
-        return list(set(all_matches))
+        return CaseMatchCollection(list(set(all_matches)))
 
     @staticmethod
     def _create_matched_pairs_single(G, cases: set = None,
@@ -176,8 +175,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
 
 class CaseMatchOneToOne(_BaseCaseMatch):
     def __init__(self, case_control_map: Dict[str, set],
-                 metadata: Union[pd.Series, pd.DataFrame] = None,
-                 distance_matrix: DistanceMatrix = None):
+                 metadata: Union[pd.Series, pd.DataFrame] = None):
         """Case match object for mapping one case to one control.
 
         :param case_control_map: Dict of cases to sets of controls
@@ -185,23 +183,29 @@ class CaseMatchOneToOne(_BaseCaseMatch):
 
         :param metadata: Metadata associated with cases & controls (optional)
         :type metadata: pd.Series or pd.DataFrame
-
-        :param distance_matrix: Beta-diversity distance matrix of cases and
-            controls (optional)
-        :type distance_matrix: skbio.DistanceMatrix
         """
         if not util._check_one_to_one(case_control_map):
             raise exc.NotOneToOneError(case_control_map)
-        super().__init__(case_control_map, metadata, distance_matrix)
+        super().__init__(case_control_map, metadata)
 
     @classmethod
-    def load_mapping(cls, path: str) -> "CaseMatchOneToOne":
-        cm = util._load_mapping(path)
+    def load(cls, path: str) -> "CaseMatchOneToOne":
+        cm = util._load(path)
         if not util._check_one_to_one(cm):
             raise exc.NotOneToOneError(cm)
         return cls(cm)
 
-    def __hash__(self):
+    def to_series(self) -> pd.Series:
+        match_tuples = (
+            map(
+                lambda y: (y[0], list(y[1])[0]),
+                self.case_control_map.items()
+            )
+        )  # (case, control)
+        cases, controls = zip(*match_tuples)
+        return pd.Series(controls, index=cases)
+
+    def __hash__(self) -> int:
         return hash(frozenset(
             (k, list(v)[0]) for k, v in self.case_control_map.items()
         ))
@@ -324,8 +328,54 @@ def match_by_multiple(
     return CaseMatchOneToMany(matches, metadata)
 
 
-def _get_cm(cm, G, strict):
+class CaseMatchCollection:
+    def __init__(self, case_matches: List[CaseMatchOneToOne] = None):
+        def is_valid_cm(x):
+            return isinstance(x, CaseMatchOneToOne)
+
+        if not all(map(is_valid_cm, case_matches)):
+            raise ValueError("Entries must all be of type CaseMatchOneToOne!")
+        self.case_matches = case_matches
+
+    def to_dataframe(self) -> pd.DataFrame:
+        match_series = [x.to_series() for x in self.case_matches]
+        df = pd.concat(match_series, axis=1)
+        df.index.name = "case_id"
+        return df
+
+    @classmethod
+    def load(cls, path) -> "CaseMatchCollection":
+        df = pd.read_table(path, sep="\t", index_col=0)
+        casematches = []
+        for col in df.columns:
+            mapping = {k: {v} for k, v in df[col].to_dict().items()}
+            casematches.append(CaseMatchOneToOne(mapping))
+        return cls(casematches)
+
+    def save(self, path) -> None:
+        df = self.to_dataframe()
+        df.to_csv(path, sep="\t", index=True)
+
+    def __next__(self):
+        if self._n >= len(self.case_matches):
+            raise StopIteration
+        cm = self.case_matches[self._n]
+        self._n += 1
+        return cm
+
+    def __iter__(self):
+        self._n = 0
+        return self
+
+    def __len__(self):
+        return len(self.case_matches)
+
+    def __getitem__(self, index):
+        return self.case_matches[index]
+
+
+def _get_cm(cm, G, strict) -> CaseMatchOneToOne:
     M = cm._create_matched_pairs_single(G, cases=cm.cases,
                                         strict=strict)
-    cm = CaseMatchOneToOne(M, cm.metadata, cm.distance_matrix)
+    cm = CaseMatchOneToOne(M, cm.metadata)
     return cm

@@ -83,7 +83,7 @@ def _match_discrete(
     return np.array(focus_value == background_values)
 
 
-def _load_mapping(path: str) -> Dict[str, set]:
+def _load(path: str) -> Dict[str, set]:
     """Load mapping file from JSON as dict.
 
     :param path: Location of filepath

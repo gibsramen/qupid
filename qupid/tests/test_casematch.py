@@ -5,7 +5,6 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pytest
-from skbio import DistanceMatrix
 
 import qupid._exceptions as mexc
 import qupid.casematch as mm
@@ -120,7 +119,6 @@ class TestErrors:
         with pytest.raises(mexc.NoMoreControlsError) as exc_info:
             match.create_matched_pairs()
 
-
     def test_no_more_controls_no_strict(self):
         data = {
             "S0A": {"S0B", "S1B", "S2B"},
@@ -135,7 +133,6 @@ class TestErrors:
 
         exp_msg = "Some cases were not matched to a control."
         assert str(warn_info[0].message) == exp_msg
-
 
     def test_multiple_no_tol_map(self):
         focus_cat_1 = ["A", "B", "C", "B", "C"]
@@ -167,7 +164,7 @@ class TestErrors:
             json.dump(tmp_ccm, f)
 
         with pytest.raises(mexc.NotOneToOneError) as exc_info1:
-            mm.CaseMatchOneToOne.load_mapping(outfile)
+            mm.CaseMatchOneToOne.load(outfile)
 
         with pytest.raises(mexc.NotOneToOneError) as exc_info2:
             mm.CaseMatchOneToOne(ccm)
@@ -175,20 +172,27 @@ class TestErrors:
         exp_msg = "The following cases are not one-to-one: ['S1A', 'S2A']"
         assert str(exc_info1.value) == str(exc_info2.value) == exp_msg
 
-    def test_missing_samples_dm(self):
-        ccm = {"S1A": {"S2B", "S3B"}, "S2A": {"S1B", "S4B"}, "S3A": {"S5B"}}
-        dm = DistanceMatrix(np.zeros([5, 5]))
-        dm.ids = ("S1A", "S2A", "S3A", "S1B", "S4B")
+    def test_bad_collection_input(self):
+        cm = mm.CaseMatchOneToOne({"A": {"X"}, "B": {"Y"}})
+        with pytest.raises(ValueError) as exc_info:
+            mm.CaseMatchCollection(["A", "B", cm, 5])
 
-        err = mexc.MissingSamplesInDistanceMatrixError
-        with pytest.raises(err) as exc_info:
-            mm.CaseMatchOneToMany(ccm, distance_matrix=dm)
+        exp_msg = "Entries must all be of type CaseMatchOneToOne!"
+        assert str(exc_info.value) == exp_msg
 
-        exp_msg = (
-            "The following samples are missing from the DistanceMatrix: "
-        )
-        assert exp_msg in str(exc_info.value)
-        assert exc_info.value.missing_samples == {"S5B", "S2B", "S3B"}
+    @pytest.mark.parametrize(
+        "test_input", [
+            {"A": {"X"}, "B": "Y"},
+            {"A": {5}, "B": {"Y"}},
+            {5: {"X"}, "B": {"Y"}},
+        ]
+    )
+    def test_invalid_input(self, test_input):
+        with pytest.raises(ValueError) as exc_info:
+            mm.CaseMatchOneToOne(test_input)
+
+        exp_err_msg = "Invalid input!"
+        assert str(exc_info.value) == exp_err_msg
 
 
 class TestCaseMatch:
@@ -249,14 +253,14 @@ class TestCaseMatch:
             assert set(content["S1A"]) == {"S2B", "S4B"}
             assert set(content["S3A"]) == {"S6B", "S2B"}
 
-    def test_load_mapping(self, tmp_path):
+    def test_load(self, tmp_path):
         inpath = os.path.join(tmp_path, "test.json")
 
         cc_map = {"S1A": ["S2B", "S4B"], "S3A": ["S6B", "S2B"]}
         with open(inpath, "w") as f:
             json.dump(cc_map, f)
 
-        match = mm.CaseMatchOneToMany.load_mapping(inpath)
+        match = mm.CaseMatchOneToMany.load(inpath)
         assert match["S1A"] == {"S2B", "S4B"}
         assert match["S3A"] == {"S6B", "S2B"}
 
@@ -275,7 +279,7 @@ class TestCaseMatch:
         with open(outfile, "w") as f:
             json.dump(tmp_ccm, f)
 
-        cm = mm.CaseMatchOneToOne.load_mapping(outfile)
+        cm = mm.CaseMatchOneToOne.load(outfile)
         assert cm.cases == {"S1A", "S2A", "S3A"}
         assert cm.controls == {"S2B", "S1B", "S5B"}
 
@@ -295,15 +299,17 @@ class TestCaseMatch:
 
     def test_create_matched_pairs(self):
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
-        match = mm.CaseMatchOneToMany.load_mapping(json_in)
+        match = mm.CaseMatchOneToMany.load(json_in)
         all_matched_pairs = match.create_matched_pairs(iterations=1000)
-        # Should be 36
-        assert len(all_matched_pairs) == 36
+        assert isinstance(all_matched_pairs, mm.CaseMatchCollection)
 
+        # Should be 36 matches
+        match_df = all_matched_pairs.to_dataframe()
+        assert match_df.shape == (len(match.cases), 36)
 
     def test_create_matched_pairs_single(self):
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
-        match = mm.CaseMatchOneToMany.load_mapping(json_in)
+        match = mm.CaseMatchOneToMany.load(json_in)
         G = nx.Graph(match.case_control_map)
         matched_pairs = match._create_matched_pairs_single(G, cases=match.cases)
 
@@ -331,3 +337,32 @@ class TestCaseMatch:
             "S8A": set()
         }
         assert match.case_control_map == exp_match
+
+
+class TestCaseMatchCollection:
+    def test_save_load(self, tmp_path):
+        cases = [f"S{x+1}A" for x in range(5)]
+        controls = [f"S{x+1}B" for x in range(10)]
+        rng = np.random.default_rng()
+
+        matches = [
+            rng.choice(controls, size=len(cases), replace=False)
+            for x in cases
+        ]
+        df = pd.DataFrame.from_records(matches, index=cases)
+        df.index.name = "case_id"
+
+        fpath_1 = f"{tmp_path}/coll_1.tsv"
+        df.to_csv(fpath_1, sep="\t", index=True)
+        df2 = mm.CaseMatchCollection.load(fpath_1).to_dataframe()
+        pd.testing.assert_frame_equal(df, df2)
+
+        cm_coll = [dict(df[x]) for x in df]
+        cm_coll = mm.CaseMatchCollection([
+            mm.CaseMatchOneToOne({k: {v} for k, v in cm.items()})
+            for cm in cm_coll
+        ])
+        fpath_2 = f"{tmp_path}/coll_2.tsv"
+        cm_coll.save(fpath_2)
+        df3 = mm.CaseMatchCollection.load(fpath_2).to_dataframe()
+        pd.testing.assert_frame_equal(df, df3)
