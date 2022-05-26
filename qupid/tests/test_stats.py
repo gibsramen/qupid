@@ -41,15 +41,9 @@ def test_permanova(example_collection, example_dm):
     pnova_res = stats.bulk_permanova(example_collection, example_dm)
     assert pnova_res.shape[0] == 30
 
-    exp_cols = [
-        "method_name",
-        "test_statistic_name",
-        "sample_size",
-        "number_of_groups",
-        "test_statistic",
-        "p-value",
-        "number_of_permutations"
-    ]
+    exp_cols = ["method_name", "test_statistic_name", "test_statistic",
+                "p-value", "sample_size", "number_of_groups",
+                "number_of_permutations"]
     assert (pnova_res.columns == exp_cols).all()
 
 
@@ -58,5 +52,6 @@ def test_univariate(example_collection, example_vals, test):
     res = stats.bulk_univariate_test(example_collection, example_vals, test)
     assert res.shape[0] == 30
 
-    exp_cols = ["test_statistic", "p-value"]
+    exp_cols = ["method_name", "test_statistic_name", "test_statistic",
+                "p-value", "sample_size", "number_of_groups"]
     assert (res.columns == exp_cols).all()

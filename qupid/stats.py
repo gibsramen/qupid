@@ -52,7 +52,10 @@ def bulk_permanova(
     ]
     pnova_results = pnova_results.sort_values(by="test_statistic",
                                               ascending=False)
-    return pnova_results
+    col_order = ["method_name", "test_statistic_name", "test_statistic",
+                 "p-value", "sample_size", "number_of_groups",
+                 "number_of_permutations"]
+    return pnova_results[col_order]
 
 
 def bulk_univariate_test(
@@ -88,8 +91,12 @@ def bulk_univariate_test(
     """
     if test in ["t", "ttest", "t-test"]:
         test_fn = ss.ttest_ind
+        method_str = "t-test"
+        stat_str = "t"
     elif test in ["mw", "mannwhitney", "mann-whitney"]:
         test_fn = ss.mannwhitneyu
+        method_str = "mann-whitney"
+        stat_str = "U"
     else:
         raise ValueError(
             "test must be either 't' (t-test) or 'mw' (Mann-Whitney)"
@@ -103,8 +110,14 @@ def bulk_univariate_test(
         for cm in casematches
     )
     results = pd.DataFrame.from_records(results)
+    results["method_name"] = method_str
+    results["test_statistic_name"] = stat_str
+    results["sample_size"] = len(casematches[0].cases) * 2
+    results["number_of_groups"] = 2
     results = results.sort_values(by="test_statistic", ascending=False)
-    return results
+    col_order = ["method_name", "test_statistic_name", "test_statistic",
+                 "p-value", "sample_size", "number_of_groups"]
+    return results[col_order]
 
 
 def _single_permanova(
