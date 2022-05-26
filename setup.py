@@ -49,5 +49,7 @@ setup(
         "scipy"
     ],
     classifiers=classifiers,
-    extras_require={"dev": ["pytest", "pytest-cov", "flake8"]}
+    include_package_data=True,
+    extras_require={"dev": ["pytest", "pytest-cov", "flake8"]},
+    package_data={"qupid": ["tests/asd.tsv"]}
 )
