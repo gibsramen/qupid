@@ -281,8 +281,11 @@ class TestCaseMatch:
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
         match = mm.CaseMatchOneToMany.load(json_in)
         all_matched_pairs = match.create_matched_pairs(iterations=1000)
-        # Should be 36
-        assert len(all_matched_pairs) == 36
+        assert isinstance(all_matched_pairs, mm.CaseMatchCollection)
+
+        # Should be 36 matches
+        match_df = all_matched_pairs.to_dataframe()
+        assert match_df.shape == (len(match.cases), 36)
 
     def test_create_matched_pairs_single(self):
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
