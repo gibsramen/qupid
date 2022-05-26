@@ -317,3 +317,32 @@ class TestCaseMatch:
             "S8A": set()
         }
         assert match.case_control_map == exp_match
+
+
+class TestCaseMatchCollection:
+    def test_save_load(self, tmp_path):
+        cases = [f"S{x+1}A" for x in range(5)]
+        controls = [f"S{x+1}B" for x in range(10)]
+        rng = np.random.default_rng()
+
+        matches = [
+            rng.choice(controls, size=len(cases), replace=False)
+            for x in cases
+        ]
+        df = pd.DataFrame.from_records(matches, index=cases)
+        df.index.name = "case_id"
+
+        fpath_1 = f"{tmp_path}/coll_1.tsv"
+        df.to_csv(fpath_1, sep="\t", index=True)
+        df2 = mm.CaseMatchCollection.load(fpath_1).to_dataframe()
+        pd.testing.assert_frame_equal(df, df2)
+
+        cm_coll = [dict(df[x]) for x in df]
+        cm_coll = mm.CaseMatchCollection([
+            mm.CaseMatchOneToOne({k: {v} for k, v in cm.items()})
+            for cm in cm_coll
+        ])
+        fpath_2 = f"{tmp_path}/coll_2.tsv"
+        cm_coll.save(fpath_2)
+        df3 = mm.CaseMatchCollection.load(fpath_2).to_dataframe()
+        pd.testing.assert_frame_equal(df, df3)

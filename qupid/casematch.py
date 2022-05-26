@@ -332,6 +332,10 @@ class CaseMatchCollection:
             casematches.append(CaseMatchOneToOne(mapping))
         return cls(casematches)
 
+    def save(self, path):
+        df = self.to_dataframe()
+        df.to_csv(path, sep="\t", index=True)
+
     def __next__(self):
         if self._n >= len(self.case_matches):
             raise StopIteration
