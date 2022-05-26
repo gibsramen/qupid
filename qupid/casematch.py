@@ -315,6 +315,11 @@ def match_by_multiple(
 
 class CaseMatchCollection:
     def __init__(self, case_matches: List[CaseMatchOneToOne] = None):
+        def is_valid_cm(x):
+            return isinstance(x, CaseMatchOneToOne)
+
+        if not all(map(is_valid_cm, case_matches)):
+            raise ValueError("Entries must all be of type CaseMatchOneToOne!")
         self.case_matches = case_matches
 
     def to_dataframe(self):

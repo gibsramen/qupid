@@ -119,7 +119,6 @@ class TestErrors:
         with pytest.raises(mexc.NoMoreControlsError) as exc_info:
             match.create_matched_pairs()
 
-
     def test_no_more_controls_no_strict(self):
         data = {
             "S0A": {"S0B", "S1B", "S2B"},
@@ -134,7 +133,6 @@ class TestErrors:
 
         exp_msg = "Some cases were not matched to a control."
         assert str(warn_info[0].message) == exp_msg
-
 
     def test_multiple_no_tol_map(self):
         focus_cat_1 = ["A", "B", "C", "B", "C"]
@@ -173,6 +171,14 @@ class TestErrors:
 
         exp_msg = "The following cases are not one-to-one: ['S1A', 'S2A']"
         assert str(exc_info1.value) == str(exc_info2.value) == exp_msg
+
+    def test_bad_collection_input(self):
+        cm = mm.CaseMatchOneToOne({"A": {"X"}, "B": {"Y"}})
+        with pytest.raises(ValueError) as exc_info:
+            mm.CaseMatchCollection(["A", "B", cm, 5])
+
+        exp_msg = "Entries must all be of type CaseMatchOneToOne!"
+        assert str(exc_info.value) == exp_msg
 
 
 class TestCaseMatch:
