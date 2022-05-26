@@ -26,6 +26,8 @@ class _BaseCaseMatch(ABC):
         :param metadata: Metadata associated with cases & controls (optional)
         :type metadata: pd.Series or pd.DataFrame
         """
+        if not self._validate_input(case_control_map):
+            raise ValueError("Invalid input!")
         self.case_control_map = case_control_map
         self.metadata = metadata
 
@@ -39,6 +41,18 @@ class _BaseCaseMatch(ABC):
         """Get names of all controls."""
         ccm = self.case_control_map
         return reduce(lambda x, y: x.union(y), ccm.values())
+
+    @staticmethod
+    def _validate_input(case_control_map):
+        def is_ctrl_set_valid(ctrls):
+            return (
+                isinstance(ctrls, set) and
+                all(map(lambda x: isinstance(x, str), ctrls))
+            )
+
+        cases_valid = map(lambda x: isinstance(x, str), case_control_map.keys())
+        ctrls_valid = map(is_ctrl_set_valid, case_control_map.values())
+        return all(cases_valid) and all(ctrls_valid)
 
     def save_mapping(self, path: str) -> None:
         """Saves case-control mapping to file as JSON.

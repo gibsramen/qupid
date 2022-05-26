@@ -180,6 +180,20 @@ class TestErrors:
         exp_msg = "Entries must all be of type CaseMatchOneToOne!"
         assert str(exc_info.value) == exp_msg
 
+    @pytest.mark.parametrize(
+        "test_input", [
+            {"A": {"X"}, "B": "Y"},
+            {"A": {5}, "B": {"Y"}},
+            {5: {"X"}, "B": {"Y"}},
+        ]
+    )
+    def test_invalid_input(self, test_input):
+        with pytest.raises(ValueError) as exc_info:
+            mm.CaseMatchOneToOne(test_input)
+
+        exp_err_msg = "Invalid input!"
+        assert str(exc_info.value) == exp_err_msg
+
 
 class TestCaseMatch:
     def test_by_single(self):
