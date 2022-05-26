@@ -55,7 +55,7 @@ class _BaseCaseMatch(ABC):
         ctrls_valid = map(is_ctrl_set_valid, ctrls)
         return all(cases_valid) and all(ctrls_valid)
 
-    def save_mapping(self, path: str) -> None:
+    def save(self, path: str) -> None:
         """Saves case-control mapping to file as JSON.
 
         :param path: Location to save

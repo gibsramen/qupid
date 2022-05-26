@@ -15,7 +15,7 @@ You can install the most up-to-date version of qupid from PyPi using the followi
 pip install qupid
 ```
 
-## Usage
+## Tutorial
 
 There are three primary steps to the qupid workflow:
 
@@ -32,6 +32,8 @@ For this tutorial we will be used data from the American Gut Project to match ca
 
 First, we'll load in the provided example metadata and separate it into the focus (samples from people with autism) and the background (samples from people who do not have autism).
 
+### Loading data
+
 ```python
 from pkg_resources import resource_filename
 import pandas as pd
@@ -41,9 +43,13 @@ metadata = pd.read_table(metadata_fpath, sep="\t", index_col=0)
 
 # Designate focus samples
 asd_str = "Diagnosed by a medical professional (doctor, physician assistant)"
-background = metadata.query("asd != @asd_str")
+no_asd_str = "I do not have this condition"
+
+background = metadata.query("asd == @no_asd_str")
 focus = metadata.query("asd == @asd_str")
 ```
+
+### Matching each case to all possible controls
 
 Next, we want to perform case-control matching on sex and age.
 Sex is a discrete factor, so qupid will attempt to find exact matches (e.g. male to male, female to female).
@@ -63,6 +69,8 @@ cm = match_by_multiple(
 
 This creates a `CaseMatchOneToMany` object where each case is matched to each possible control.
 You can view the underlying matches as a dictionary with `cm.case_control_map`.
+
+### Generating mappings from each case to a single control
 
 What we now want is to match each case to a *single* control so we can perform downstream analysis.
 However, we have *a lot* of possible controls.
@@ -108,3 +116,99 @@ S10317.000067637  S10317.000067747  S10317.000098161  ...  S10317.000017116  S10
 
 [5 rows x 100 columns]
 ```
+
+### Statistical assessment of matchings
+
+Once we have this list of matchings, we want to determine how statistically difference cases are from controls based on some values.
+qupid supports two types of statistical tests: univariate and multivariate.
+Univariate data is in the form of a vector where each case and control has a single value.
+This can be alpha diversity, log-ratios, etc.
+Multivariate data is in the form of a distance matrix where each entry is the pairwise distance between two samples, e.g. from beta diversity analysis.
+We will generate random data for this tutorial where there exists a small difference between ASD samples and non-ASD samples.
+
+```python
+import numpy as np
+
+rng = np.random.default_rng()
+asd_mean = 4
+ctrl_mean = 3.75
+
+num_cases = len(cm.cases)
+num_ctrls = len(cm.controls)
+
+asd_values = rng.normal(asd_mean, 1, size=num_cases)
+ctrl_values = rng.normal(ctrl_mean, 1, size=num_ctrls)
+
+asd_values = pd.Series(asd_values, index=focus.index)
+ctrl_values = pd.Series(ctrl_values, index=background.index)
+
+sample_values = pd.concat([asd_values, ctrl_values])
+```
+
+We can now evaluate a t-test between case values and control values for each possible case-control matching in our collection.
+
+```python
+from qupid.stats import bulk_univariate_test
+
+test_results = bulk_univariate_test(
+    casematches=results,
+    values=sample_values,
+    test="t"
+)
+```
+
+This returns a DataFrame of test results sorted by descending test statistic.
+
+```
+   method_name test_statistic_name  test_statistic   p-value  sample_size  number_of_groups
+15      t-test                   t        3.900874  0.000187           90                 2
+61      t-test                   t        3.770914  0.000294           90                 2
+50      t-test                   t        3.536803  0.000649           90                 2
+32      t-test                   t        3.395298  0.001030           90                 2
+68      t-test                   t        3.310822  0.001350           90                 2
+..         ...                 ...             ...       ...          ...               ...
+13      t-test                   t        0.645694  0.520158           90                 2
+49      t-test                   t        0.555063  0.580260           90                 2
+92      t-test                   t        0.409252  0.683349           90                 2
+51      t-test                   t        0.110707  0.912101           90                 2
+34      t-test                   t        0.048571  0.961371           90                 2
+
+[100 rows x 6 columns]
+```
+
+From this table, we can see that iteration 15 best separates cases from controls based on our random data.
+Conversely, iteration 34 showed essentially no difference between cases and controls.
+This shows that it is important to create multiple matchings as some of them are better than others.
+We can plot the distribution of p-values to get a sense of the overall distribution.
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.histplot(test_results["p-value"])
+```
+
+![p-value Historam](./imgs/asd_match_pvals.png)
+
+We see that most of the p-values are near zero which makes sense because we simulated our data with a difference between ASD and non-ASD samples.
+
+### Saving and loading qupid results
+
+qupid allows the saving and loading of both `CaseMatch` and `CaseMatchCollection` objects.
+`CaseMatchOneToMany` and `CaseMatchOneToOne` objects are saved as JSON files while `CaseMatchColletion` objects are saved as pandas DataFrames.
+
+```python
+from qupid.casematch import CaseMatchOneToMany, CaseMatchOneToOne, CaseMatchCollection
+
+cm.save("asd_matches.one_to_many.json")  # Save all possible matches
+results.save("asd_matches.100.tsv")  # Save all 100 iterations
+results[15].save("asd_matches.best.json")  # Save best matching
+
+CaseMatchOneToMany.load("asd_matches.one_to_many.json")
+CaseMatchCollection.load("asd_matches.100.tsv")
+CaseMatchOneToOne.load("asd_matches.best.json")
+```
+
+## Help with qupid
+
+If you encounter a bug in qupid, please post a GitHub issue and we will get to it as soon as we can. We welcome any ideas or documentation updates/fixes so please submit an issue and/or a pull request if you have thoughts on making qupid better.
