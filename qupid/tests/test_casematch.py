@@ -166,7 +166,7 @@ class TestErrors:
             json.dump(tmp_ccm, f)
 
         with pytest.raises(mexc.NotOneToOneError) as exc_info1:
-            mm.CaseMatchOneToOne.load_mapping(outfile)
+            mm.CaseMatchOneToOne.load(outfile)
 
         with pytest.raises(mexc.NotOneToOneError) as exc_info2:
             mm.CaseMatchOneToOne(ccm)
@@ -233,14 +233,14 @@ class TestCaseMatch:
             assert set(content["S1A"]) == {"S2B", "S4B"}
             assert set(content["S3A"]) == {"S6B", "S2B"}
 
-    def test_load_mapping(self, tmp_path):
+    def test_load(self, tmp_path):
         inpath = os.path.join(tmp_path, "test.json")
 
         cc_map = {"S1A": ["S2B", "S4B"], "S3A": ["S6B", "S2B"]}
         with open(inpath, "w") as f:
             json.dump(cc_map, f)
 
-        match = mm.CaseMatchOneToMany.load_mapping(inpath)
+        match = mm.CaseMatchOneToMany.load(inpath)
         assert match["S1A"] == {"S2B", "S4B"}
         assert match["S3A"] == {"S6B", "S2B"}
 
@@ -259,7 +259,7 @@ class TestCaseMatch:
         with open(outfile, "w") as f:
             json.dump(tmp_ccm, f)
 
-        cm = mm.CaseMatchOneToOne.load_mapping(outfile)
+        cm = mm.CaseMatchOneToOne.load(outfile)
         assert cm.cases == {"S1A", "S2A", "S3A"}
         assert cm.controls == {"S2B", "S1B", "S5B"}
 
@@ -279,14 +279,14 @@ class TestCaseMatch:
 
     def test_create_matched_pairs(self):
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
-        match = mm.CaseMatchOneToMany.load_mapping(json_in)
+        match = mm.CaseMatchOneToMany.load(json_in)
         all_matched_pairs = match.create_matched_pairs(iterations=1000)
         # Should be 36
         assert len(all_matched_pairs) == 36
 
     def test_create_matched_pairs_single(self):
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
-        match = mm.CaseMatchOneToMany.load_mapping(json_in)
+        match = mm.CaseMatchOneToMany.load(json_in)
         G = nx.Graph(match.case_control_map)
         matched_pairs = match._create_matched_pairs_single(G, cases=match.cases)
 

@@ -53,7 +53,7 @@ class _BaseCaseMatch(ABC):
 
     @classmethod
     @abstractmethod
-    def load_mapping(cls, path: str):
+    def load(cls, path: str):
         """Create CaseMatch object from JSON file."""
 
     def __getitem__(self, case_name: str) -> set:
@@ -77,8 +77,8 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         super().__init__(case_control_map, metadata)
 
     @classmethod
-    def load_mapping(cls, path: str) -> "CaseMatchOneToMany":
-        cm = util._load_mapping(path)
+    def load(cls, path: str) -> "CaseMatchOneToMany":
+        cm = util._load(path)
         return cls(cm)
 
     # https://www.python.org/dev/peps/pep-0484/#forward-references
@@ -174,8 +174,8 @@ class CaseMatchOneToOne(_BaseCaseMatch):
         super().__init__(case_control_map, metadata)
 
     @classmethod
-    def load_mapping(cls, path: str) -> "CaseMatchOneToOne":
-        cm = util._load_mapping(path)
+    def load(cls, path: str) -> "CaseMatchOneToOne":
+        cm = util._load(path)
         if not util._check_one_to_one(cm):
             raise exc.NotOneToOneError(cm)
         return cls(cm)
