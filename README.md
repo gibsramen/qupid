@@ -5,7 +5,7 @@
 
 (Pronounced like cupid)
 
-qupid is a tool for generating and statisticall evualuating *multiple* case-control matchings of microbiome data.
+qupid is a tool for generating and statistically evaluating *multiple* case-control matchings of microbiome data.
 
 ## Installation
 
