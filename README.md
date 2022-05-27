@@ -195,7 +195,7 @@ We see that most of the p-values are near zero which makes sense because we simu
 ### Saving and loading qupid results
 
 qupid allows the saving and loading of both `CaseMatch` and `CaseMatchCollection` objects.
-`CaseMatchOneToMany` and `CaseMatchOneToOne` objects are saved as JSON files while `CaseMatchColletion` objects are saved as pandas DataFrames.
+`CaseMatchOneToMany` and `CaseMatchOneToOne` objects are saved as JSON files while `CaseMatchCollection` objects are saved as pandas DataFrames.
 
 ```python
 from qupid.casematch import CaseMatchOneToMany, CaseMatchOneToOne, CaseMatchCollection
