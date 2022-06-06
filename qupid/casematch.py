@@ -55,7 +55,7 @@ class _BaseCaseMatch(ABC):
         ctrls_valid = map(is_ctrl_set_valid, ctrls)
         return all(cases_valid) and all(ctrls_valid)
 
-    def save_mapping(self, path: str) -> None:
+    def save(self, path: str) -> None:
         """Saves case-control mapping to file as JSON.
 
         :param path: Location to save
@@ -137,14 +137,14 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         G = nx.Graph(self.case_control_map)
 
         all_matches = Parallel(n_jobs=n_jobs, **parallel_args)(
-            delayed(_get_cm)(self, G, strict)
+            delayed(self._get_cm_one_to_one)(G, strict)
             for i in range(iterations)
         )
 
         return CaseMatchCollection(list(set(all_matches)))
 
     @staticmethod
-    def _create_matched_pairs_single(G, cases: set = None,
+    def _create_matched_pairs_single(G: nx.Graph, cases: set = None,
                                      strict: bool = True) -> dict:
         """Create a single matched pair of cases to controls.
 
@@ -171,6 +171,25 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             else:
                 warn("Some cases were not matched to a control.", UserWarning)
         return M
+
+    def _get_cm_one_to_one(self, G: nx.Graph,
+                           strict: bool) -> "CaseMatchOneToOne":
+        """Get a single matching from a graph as CaseMatchOneToOne.
+
+        :param G: Bipartite graph on which to perform matching
+        :type G: nx.Graph
+
+        :param strict: Whether to perform strict matching. If True, will throw
+            an error if a maximum matching is not found. Otherwise will raise a
+            warning.
+        :type strict: bool
+
+        :returns: Set of matches from cases to controls
+        :rtype: qupid.CaseMatchOneToOne
+        """
+        M = self._create_matched_pairs_single(G, cases=self.cases,
+                                              strict=strict)
+        return CaseMatchOneToOne(M, self.metadata)
 
 
 class CaseMatchOneToOne(_BaseCaseMatch):
@@ -372,10 +391,3 @@ class CaseMatchCollection:
 
     def __getitem__(self, index):
         return self.case_matches[index]
-
-
-def _get_cm(cm, G, strict) -> CaseMatchOneToOne:
-    M = cm._create_matched_pairs_single(G, cases=cm.cases,
-                                        strict=strict)
-    cm = CaseMatchOneToOne(M, cm.metadata)
-    return cm

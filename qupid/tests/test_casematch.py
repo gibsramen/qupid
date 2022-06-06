@@ -242,12 +242,12 @@ class TestCaseMatch:
         }
         assert match.case_control_map == exp_match
 
-    def test_save_mapping(self, tmp_path):
+    def test_save(self, tmp_path):
         outpath = os.path.join(tmp_path, "test.json")
 
         cc_map = {"S1A": {"S2B", "S4B"}, "S3A": {"S6B", "S2B"}}
         match = mm.CaseMatchOneToMany(cc_map)
-        match.save_mapping(outpath)
+        match.save(outpath)
         with open(outpath, "r") as f:
             content = json.load(f)
             assert set(content["S1A"]) == {"S2B", "S4B"}
