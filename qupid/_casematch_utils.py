@@ -108,3 +108,10 @@ def _validate_distance_matrix(cases: set, controls: set,
     missing_samples = cc_samples.difference(dm_samples)
     if missing_samples:
         raise exc.MissingSamplesInDistanceMatrixError(missing_samples)
+
+
+def _infer_column_type(background: pd.DataFrame, column: str):
+    if column not in background.columns:
+        raise ValueError(f"{column} not found in background.")
+
+

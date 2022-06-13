@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import partial, reduce
 import json
-from typing import Dict, Set, Union, List
+from typing import Dict, Set, Union, List, Iterable
 from warnings import warn
 
 from joblib import Parallel, delayed
@@ -230,6 +230,48 @@ class CaseMatchOneToOne(_BaseCaseMatch):
         ))
 
 
+def match_cases(
+    focus: pd.DataFrame,
+    background: pd.DataFrame,
+    by: Union[str, List[str]] = None,
+    tolerances: Dict[str, float] = None,
+    on_failure: str = "raise"
+):
+    """Get matching control from cases.
+
+    :param focus: Samples to be matched
+    :type focus: pd.Series
+
+    :param background: Metadata to match against
+    :type background: pd.Series
+
+    :param by: Column(s) on which to match cases to controls
+    :type by: Union[str, List[str]]
+
+    :param tolerance_map: Mapping of tolerances for continuous categories
+    :type tolerance_map: Dict[str, float]
+
+    :param on_failure: Whether to 'raise' or 'ignore' sample for which a match
+        cannot be found, defaults to 'raise'
+    :type on_failure: str
+
+    :returns: Matched control samples
+    :rtype: qupid.CaseMatchOneToMany
+    """
+    if isinstance(by, Iterable):
+        match_func = partial(
+            _match_by_multiple,
+            focus=focus,
+            background=background,
+            on_failure=on_failure
+        )
+    elif isinstance(by, str):
+        match_func = _match_by_single
+    else:
+        raise ValueError("'by' must of type str or List[str]")
+    return
+
+
 def match_by_single(
     focus: pd.Series,
     background: pd.Series,
@@ -288,6 +330,7 @@ def match_by_single(
 
     metadata = pd.concat([focus, background])
     return CaseMatchOneToMany(matches, metadata)
+
 
 
 def match_by_multiple(
