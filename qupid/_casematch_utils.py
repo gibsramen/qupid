@@ -123,9 +123,6 @@ def _infer_column_type(focus: pd.Series, background: pd.Series) -> str:
 
     col_types = {check_dtype(col) for col in [focus, background]}
     if len(col_types) != 1:
-        raise ValueError(
-            "Focus and background do not have the same dtype for "
-            f"{column}."
-        )
+        raise ValueError("Focus and background do not have the same dtype")
 
     return col_types.pop()
