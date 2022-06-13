@@ -1,4 +1,4 @@
-from typing import Collection, Dict, Sequence, Union, List
+from typing import Collection, Sequence, List
 
 import pandas as pd
 

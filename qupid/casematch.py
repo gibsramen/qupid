@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import partial, reduce
 import json
-from typing import Dict, Set, Union, List, Iterable
+from typing import Dict, Set, Union, List
 from warnings import warn
 
 from joblib import Parallel, delayed
