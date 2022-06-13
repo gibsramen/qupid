@@ -227,6 +227,32 @@ class TestCaseMatch:
         }
         assert match.case_control_map == exp_match
 
+    def test_bool_column_type(self):
+        focus_cat_1 = ["A", "B", "C", "B", "C"]
+        focus_cat_2 = [True, False, False, True, False]
+        bg_cat_1 = ["A", "B", "B", "C", "D", "C", "A"]
+        bg_cat_2 = [True, False, True, False, True, False, False]
+
+        focus_index = [f"S{x}A" for x in range(5)]
+        bg_index = [f"S{x}B" for x in range(7)]
+
+        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2},
+                             index=focus_index)
+        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2},
+                          index=bg_index)
+
+        cats = ["cat_1", "cat_2"]
+
+        match = mm.match_by_multiple(focus, bg, cats)
+        exp_match = {
+            "S0A": {"S0B"},
+            "S1A": {"S1B"},
+            "S2A": {"S3B", "S5B"},
+            "S3A": {"S2B"},
+            "S4A": {"S3B", "S5B"},
+        }
+        assert match.case_control_map == exp_match
+
     def test_save(self, tmp_path):
         outpath = os.path.join(tmp_path, "test.json")
 

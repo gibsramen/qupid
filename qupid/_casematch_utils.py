@@ -113,9 +113,9 @@ def _validate_distance_matrix(cases: set, controls: set,
 
 def _infer_column_type(focus: pd.Series, background: pd.Series) -> str:
     def check_dtype(col: pd.Series):
-        if is_string_dtype(col):
+        if is_string_dtype(col) or is_bool_dtype(col):
             return "discrete"
-        elif is_numeric_dtype(col) and not is_bool_dtype(col):
+        elif is_numeric_dtype(col):
             return "continuous"
         else:
             raise ValueError(f"{col} has wrong column type!")
