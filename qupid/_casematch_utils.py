@@ -112,6 +112,7 @@ def _validate_distance_matrix(cases: set, controls: set,
 
 
 def _infer_column_type(focus: pd.Series, background: pd.Series) -> str:
+    """Determine data types."""
     def check_dtype(col: pd.Series):
         if is_string_dtype(col) or is_bool_dtype(col):
             return "discrete"
