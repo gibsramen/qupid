@@ -62,7 +62,7 @@ from qupid import match_by_multiple
 cm = match_by_multiple(
     focus=focus,
     background=background,
-    category_type_map={"sex": "discrete", "age_years": "continuous"},
+    categories=["sex", "age_years"],
     tolerance_map={"age_years": 10}
 )
 ```
