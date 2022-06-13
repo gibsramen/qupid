@@ -1,4 +1,4 @@
-from typing import Collection, Dict, Sequence, Union
+from typing import Collection, Dict, Sequence, Union, List
 
 import pandas as pd
 
@@ -33,12 +33,12 @@ class NoMatchesError(Exception):
 class MissingCategoriesError(Exception):
     def __init__(
         self,
-        category_map: Dict[str, Union[str, float]],
+        categories: List[str],
         target_name: str,
         target_df: pd.DataFrame
     ):
         self.missing_categories = (
-            set(category_map.keys()).difference(set(target_df.columns))
+            set(categories).difference(set(target_df.columns))
         )
         self.message = (
             f"The following categories are missing from {target_name}: "

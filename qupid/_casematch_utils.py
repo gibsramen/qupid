@@ -3,6 +3,7 @@ from typing import Dict, Sequence, TypeVar
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype, is_string_dtype, is_bool_dtype
 from skbio import DistanceMatrix
 
 from qupid import _exceptions as exc
@@ -28,11 +29,11 @@ def _do_category_values_overlap(focus: pd.Series,
     return bool(intersection)
 
 
-def _are_categories_subset(category_map: dict, target: pd.DataFrame) -> bool:
+def _are_categories_subset(categories: list, target: pd.DataFrame) -> bool:
     """Check to make sure all categories in map are in target DataFrame.
 
-    :param category_map: Mapping of category names as keys
-    :type category_map: dict
+    :param categories: Metadata categories
+    :type categories: list
 
     :param target: DataFrame to interrogate for categories
     :type target: pd.DataFrame
@@ -40,7 +41,7 @@ def _are_categories_subset(category_map: dict, target: pd.DataFrame) -> bool:
     :returns: True if all categories are present in target, False otherwise
     :rtype: bool
     """
-    return set(category_map.keys()).issubset(target.columns)
+    return set(categories).issubset(target.columns)
 
 
 def _match_continuous(
@@ -110,8 +111,20 @@ def _validate_distance_matrix(cases: set, controls: set,
         raise exc.MissingSamplesInDistanceMatrixError(missing_samples)
 
 
-def _infer_column_type(background: pd.DataFrame, column: str):
-    if column not in background.columns:
-        raise ValueError(f"{column} not found in background.")
+def _infer_column_type(focus: pd.Series, background: pd.Series) -> str:
+    def check_dtype(col: pd.Series):
+        if is_string_dtype(col):
+            return "discrete"
+        elif is_numeric_dtype(col) and not is_bool_dtype(col):
+            return "continuous"
+        else:
+            raise ValueError(f"{col} has wrong column type!")
 
+    col_types = {check_dtype(col) for col in [focus, background]}
+    if len(col_types) != 1:
+        raise ValueError(
+            "Focus and background do not have the same dtype for "
+            f"{column}."
+        )
 
+    return col_types.pop()
