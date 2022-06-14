@@ -233,7 +233,6 @@ class CaseMatchOneToOne(_BaseCaseMatch):
 def match_by_single(
     focus: pd.Series,
     background: pd.Series,
-    category_type: str,
     tolerance: float = 1e-08,
     on_failure: str = "raise"
 ) -> CaseMatchOneToMany:
@@ -244,9 +243,6 @@ def match_by_single(
 
     :param background: Metadata to match against
     :type background: pd.Series
-
-    :param category_type: One of 'continuous' or 'discrete'
-    :type category_type: str
 
     :param tolerance: Tolerance for matching continuous metadata, defaults to
         1e-08
@@ -262,18 +258,14 @@ def match_by_single(
     if set(focus.index) & set(background.index):
         raise exc.IntersectingSamplesError(focus.index, background.index)
 
+    category_type = util._infer_column_type(focus, background)
     if category_type == "discrete":
         if not util._do_category_values_overlap(focus, background):
             raise exc.DisjointCategoryValuesError(focus, background)
         matcher = util._match_discrete
-    elif category_type == "continuous":
+    else:
         # Only want to pass tolerance if continuous category
         matcher = partial(util._match_continuous, tolerance=tolerance)
-    else:
-        raise ValueError(
-            "category_type must be 'continuous' or 'discrete'. "
-            f"'{category_type}' is not a valid choice."
-        )
 
     matches = dict()
     for f_idx, f_val in focus.iteritems():
@@ -293,7 +285,7 @@ def match_by_single(
 def match_by_multiple(
     focus: pd.DataFrame,
     background: pd.DataFrame,
-    category_type_map: Dict[str, str],
+    categories: List[str],
     tolerance_map: Dict[str, float] = None,
     on_failure: str = "raise"
 ) -> CaseMatchOneToMany:
@@ -305,9 +297,8 @@ def match_by_multiple(
     :param background: Metadata to match against
     :type background: pd.DataFrame
 
-    :param category_type_map: Mapping of whether each category is continous or
-        discrete. Only included categories will be used.
-    :type category_type_map: Dict[str, str]
+    :param categories: Categories to include as matching criteria
+    :type categories: List[str]
 
     :param tolerance_map: Mapping of tolerances for continuous categories.
         Categories not represented are default to 1e-08
@@ -320,11 +311,11 @@ def match_by_multiple(
     :returns: Matched control samples
     :rtype: qupid.CaseMatchOneToMany
     """
-    if not util._are_categories_subset(category_type_map, focus):
-        raise exc.MissingCategoriesError(category_type_map, "focus", focus)
+    if not util._are_categories_subset(categories, focus):
+        raise exc.MissingCategoriesError(categories, "focus", focus)
 
-    if not util._are_categories_subset(category_type_map, background):
-        raise exc.MissingCategoriesError(category_type_map, "background",
+    if not util._are_categories_subset(categories, background):
+        raise exc.MissingCategoriesError(categories, "background",
                                          background)
 
     if tolerance_map is None:
@@ -333,9 +324,9 @@ def match_by_multiple(
     # Match everyone at first
     matches = {i: set(background.index) for i in focus.index}
 
-    for cat, cat_type in category_type_map.items():
+    for cat in categories:
         tol = tolerance_map.get(cat, 1e-08)
-        observed = match_by_single(focus[cat], background[cat], cat_type,
+        observed = match_by_single(focus[cat], background[cat],
                                    tol, on_failure).case_control_map
         for fidx, fhits in observed.items():
             # Reduce the matches with successive categories
