@@ -1,3 +1,5 @@
+from typing import Iterator
+
 import biom
 import pandas as pd
 
@@ -28,3 +30,22 @@ def filter_table(
 
     table_filt = table.filter(case_ctrl.index, inplace=False)
     return table_filt, case_ctrl
+
+
+@check_input_types(["table", "collection"])
+def filter_table_by_collection(
+    table: biom.Table,
+    collection: CaseMatchCollection,
+) -> Iterator:
+    """Filter table by multiple match sets.
+
+    :param table: Counts of features by samples
+    :type table: biom.Table
+
+    :param collection: Collection of match sets
+    :type collection: qupid.CaseMatchCollection
+
+    :returns: Generator of filtered tables and mappings
+    :rtype: Iterator
+    """
+    return (filter_table(table, cm) for cm in collection.case_matches)
