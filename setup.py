@@ -42,6 +42,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "numpy",
+        "biom-format",
         "pandas>=1.0.0",
         "scikit-bio",
         "networkx",

@@ -2,6 +2,7 @@ all: stylecheck test
 
 stylecheck:
 	flake8 qupid/*.py
+	flake8 qupid/tests/*.py
 	flake8 setup.py
 
 test:

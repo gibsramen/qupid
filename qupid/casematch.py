@@ -387,16 +387,8 @@ class CaseMatchCollection:
         df = self.to_dataframe()
         df.to_csv(path, sep="\t", index=True)
 
-    def __next__(self):
-        if self._n >= len(self.case_matches):
-            raise StopIteration
-        cm = self.case_matches[self._n]
-        self._n += 1
-        return cm
-
     def __iter__(self):
-        self._n = 0
-        return self
+        return (cm for cm in self.case_matches)
 
     def __len__(self):
         return len(self.case_matches)
