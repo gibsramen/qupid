@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import partial, reduce
 import json
-from typing import Dict, Set, Union, List, Callable
+from typing import Dict, Set, Union, List, Callable, Iterator
 from warnings import warn
 
 from joblib import Parallel, delayed
@@ -374,7 +374,7 @@ class CaseMatchCollection:
             casematches.append(CaseMatchOneToOne(mapping))
         return cls(casematches)
 
-    def apply(self, func: Callable):
+    def apply(self, func: Callable) -> Iterator:
         """Apply a function to each CaseMatchOneToOne in a collection.
 
         :param func: Function to call on each CaseMatchOneToOne

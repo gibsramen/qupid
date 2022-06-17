@@ -376,3 +376,45 @@ class TestCaseMatchCollection:
         cm_coll.save(fpath_2)
         df3 = mm.CaseMatchCollection.load(fpath_2).to_dataframe()
         pd.testing.assert_frame_equal(df, df3)
+
+    def test_apply(self):
+        json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
+        match = mm.CaseMatchOneToMany.load(json_in)
+        collection = match.create_matched_pairs(iterations=1000)
+
+        rng = np.random.default_rng()
+        cases = match.cases
+        ctrls = match.controls
+
+        case_vals = rng.normal(4, 0.25, size=len(cases))
+        ctrl_vals = rng.normal(2, 0.25, size=len(ctrls))
+
+        case_vals = pd.Series(case_vals, index=list(cases))
+        ctrl_vals = pd.Series(ctrl_vals, index=list(ctrls))
+
+        all_vals = pd.concat([case_vals, ctrl_vals])
+
+        # Same ctrl set can be used in different arrangement of controls
+        uniq_mean_sets = set()
+        for cm in collection:
+            this_set = frozenset(cm.controls)
+            this_mean = np.mean(all_vals.loc[list(this_set)])
+            uniq_mean_sets.add(this_mean)
+
+        num_uniq_mean_sets = len(uniq_mean_sets)
+
+        def cm_func(cm):
+            _cases = list(cm.cases)
+            _ctrls = list(cm.controls)
+
+            _case_vals = all_vals.loc[_cases]
+            _ctrl_vals = all_vals.loc[_ctrls]
+
+            return np.mean(_case_vals), np.mean(_ctrl_vals)
+
+        # All case vals means should be the same bc same cases each time
+        gen = list(collection.apply(cm_func))
+        case_means, ctrl_means = list(zip(*gen))
+
+        assert len(set(case_means)) == 1
+        assert len(set(ctrl_means)) == num_uniq_mean_sets
