@@ -1,5 +1,3 @@
-from itertools import zip_longest
-
 import biom
 import numpy as np
 import pytest

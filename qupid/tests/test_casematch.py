@@ -101,7 +101,7 @@ class TestErrors:
             "S4A": {"S5B"}
         }
         match = mm.CaseMatchOneToMany(data)
-        with pytest.raises(mexc.NoMoreControlsError) as exc_info:
+        with pytest.raises(mexc.NoMoreControlsError):
             match.create_matched_pairs()
 
     def test_no_more_controls_no_strict(self):
@@ -322,7 +322,9 @@ class TestCaseMatch:
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
         match = mm.CaseMatchOneToMany.load(json_in)
         G = nx.Graph(match.case_control_map)
-        matched_pairs = match._create_matched_pairs_single(G, cases=match.cases)
+        matched_pairs = match._create_matched_pairs_single(
+            G, cases=match.cases
+        )
 
         assert len(matched_pairs) == 6
         ctrl_lens = [len(v) == 1 for k, v in matched_pairs.items()]
