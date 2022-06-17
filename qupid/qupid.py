@@ -116,5 +116,63 @@ def match_by_multiple(
     return CaseMatchOneToMany(matches, metadata)
 
 
-def shuffle():
-    pass
+def shuffle(
+    focus: pd.DataFrame,
+    background: pd.DataFrame,
+    categories: List[str],
+    iterations: int = 10,
+    tolerance_map: Dict[str, float] = None,
+    on_failure: str = "raise",
+    strict: bool = True,
+    n_jobs: int = 1,
+    parallel_args: dict = None
+) -> pd.DataFrame:
+    """Create multiple case-control matches on several matching criteria.
+
+    :param focus: Samples to be matched
+    :type focus: pd.DataFrame
+
+    :param background: Metadata to match against
+    :type background: pd.DataFrame
+
+    :param categories: Categories to include as matching criteria
+    :type categories: List[str]
+
+    :param tolerance_map: Mapping of tolerances for continuous categories.
+        Categories not represented are default to 1e-08
+    :type tolerance_map: Dict[str, float]
+
+    :param on_failure: Whether to 'raise' or 'ignore' sample for which a match
+        cannot be found, defaults to 'raise'
+    :type on_failure: str
+
+    :param iterations: Number of iterations to run, defaults to 10
+    :type iterations: int
+
+    :param strict: Whether to perform strict matching. If True, will throw
+        an error if a maximum matching is not found. Otherwise will raise a
+        warning. Defaults to True.
+    :type strict: bool
+
+    :param n_jobs: Number of jobs to run in parallel, defaults to 1
+        (single CPU)
+    :type n_jobs: int
+
+    :param parallel_args: Dictionary of arguments to be passed into
+        joblib.Parallel. See the documentation for this class at
+        https://joblib.readthedocs.io/en/latest/generated/joblib.Parallel.html
+    :type parallel_args: dict
+
+    :returns: DataFrame where index is cases and each column represents
+        a discrete CaseMatchOneToOne instance
+    :rtype: pd.DataFrame
+    """
+    cm_one_to_many = match_by_multiple(focus, background, categories,
+                                       tolerance_map, on_failure)
+    res = cm_one_to_many.create_matched_pairs(
+        iterations=iterations,
+        strict=strict,
+        n_jobs=n_jobs,
+        parallel_args=parallel_args
+    ).to_dataframe()
+    return res
