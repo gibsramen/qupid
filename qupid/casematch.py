@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from functools import partial, reduce
+from functools import reduce
 import json
 from typing import Dict, Set, Union, List
 from warnings import warn

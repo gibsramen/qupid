@@ -3,7 +3,7 @@ from typing import List, Dict
 
 import pandas as pd
 
-from .casematch import CaseMatchOneToOne, CaseMatchOneToMany
+from .casematch import CaseMatchOneToMany
 from . import _exceptions as exc
 from . import _casematch_utils as util
 

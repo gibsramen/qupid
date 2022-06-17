@@ -9,12 +9,14 @@ def test_shuffle():
     metadata_fpath = resource_filename("qupid", "tests/data/asd.tsv")
     metadata = pd.read_table(metadata_fpath, sep="\t", index_col=0)
 
-    # Designate focus samples
-    asd_str = "Diagnosed by a medical professional (doctor, physician assistant)"
+    # Designate focus and background samples
+    asd_str = (
+        "Diagnosed by a medical professional (doctor, physician assistant)"
+    )
     no_asd_str = "I do not have this condition"
 
-    background = metadata.query("asd == @no_asd_str")
-    focus = metadata.query("asd == @asd_str")
+    background = metadata[metadata["asd"] == no_asd_str]
+    focus = metadata[metadata["asd"] == asd_str]
 
     res = shuffle(
         focus=focus,

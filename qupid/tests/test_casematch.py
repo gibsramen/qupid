@@ -56,7 +56,7 @@ class TestErrors:
         exp_msg = "No valid matches found for sample S1A."
         with pytest.raises(mexc.NoMatchesError) as exc_info:
             match_by_single(s1, s2, tolerance=0.5,
-                               on_failure="raise")
+                            on_failure="raise")
         assert str(exc_info.value) == exp_msg
 
     def test_match_by_multiple_cat_subset_err(self):
