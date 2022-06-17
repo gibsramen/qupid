@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import partial, reduce
 import json
-from typing import Dict, Set, Union, List
+from typing import Dict, Set, Union, List, Callable
 from warnings import warn
 
 from joblib import Parallel, delayed
@@ -339,7 +339,12 @@ def match_by_multiple(
 
 
 class CaseMatchCollection:
-    def __init__(self, case_matches: List[CaseMatchOneToOne] = None):
+    def __init__(self, case_matches: List[CaseMatchOneToOne]):
+        """Container for multiple matching sets.
+
+        :param case_matches: List of match sets
+        :type case_matches: List[CaseMatchOneToOne]
+        """
         def is_valid_cm(x):
             return isinstance(x, CaseMatchOneToOne)
 
@@ -348,6 +353,12 @@ class CaseMatchCollection:
         self.case_matches = case_matches
 
     def to_dataframe(self) -> pd.DataFrame:
+        """Convert to DataFrame.
+
+        :returns: DataFrame where index is cases and each column represents a
+            discrete CaseMatchOneToOne instance
+        :rtype: pd.DataFrame
+        """
         match_series = [x.to_series() for x in self.case_matches]
         df = pd.concat(match_series, axis=1)
         df.index.name = "case_id"
@@ -355,6 +366,7 @@ class CaseMatchCollection:
 
     @classmethod
     def load(cls, path) -> "CaseMatchCollection":
+        """Load from TSV."""
         df = pd.read_table(path, sep="\t", index_col=0)
         casematches = []
         for col in df.columns:
@@ -362,7 +374,16 @@ class CaseMatchCollection:
             casematches.append(CaseMatchOneToOne(mapping))
         return cls(casematches)
 
+    def apply(self, func: Callable):
+        """Apply a function to each CaseMatchOneToOne in a collection.
+
+        :param func: Function to call on each CaseMatchOneToOne
+        :type func: Callable
+        """
+        return (func(cm) for cm in self.case_matches)
+
     def save(self, path) -> None:
+        """Save as TSV."""
         df = self.to_dataframe()
         df.to_csv(path, sep="\t", index=True)
 
