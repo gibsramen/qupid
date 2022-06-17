@@ -17,7 +17,7 @@ pip install qupid
 
 ## Quickstart
 
-qupid provides a convenience function to easily generate multiple matches based on matching critiera.
+qupid provides a convenience function, `shuffle`, to easily generate multiple matches based on matching critiera.
 This block of code will determine each viable control per case and randomly pick 10 arrangments of a single case matched to a single valid control.
 The output is a pandas DataFrame where the rows are case names and each column represents a valid mapping of case to control.
 
@@ -236,6 +236,26 @@ results[15].save("asd_matches.best.json")  # Save best matching
 CaseMatchOneToMany.load("asd_matches.one_to_many.json")
 CaseMatchCollection.load("asd_matches.100.tsv")
 CaseMatchOneToOne.load("asd_matches.best.json")
+```
+
+## Command Line Interface
+
+qupid has a command line interface to create multiple matchings from cases and possible controls.
+If providing numeric categories, the column name must be accompanied by the tolerance after a space (e.g. `age_years 5`) for a tolerance of 5 years.
+You can pass multiple options to `--discrete-cat` or `--numeric-cat` to specify multiple matching criteria.
+
+For usage detalls, use `qupid shuffle --help`.
+
+```
+qupid shuffle \
+    --focus focus.tsv \
+    --background background.tsv \
+    --iterations 15 \
+    --discrete-cat sex \
+    --discrete-cat race \
+    --numeric-cat age_years 5 \
+    --numeric-cat weight_lbs 10 \
+    --output matches.tsv
 ```
 
 ## Help with qupid
