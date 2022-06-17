@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from skbio import DistanceMatrix
 
-from qupid import CaseMatchOneToOne, CaseMatchOneToMany
+from qupid import CaseMatchOneToMany
 from qupid import stats
 
 CASES = [f"case_{x}" for x in list("ABCDEFGH")]

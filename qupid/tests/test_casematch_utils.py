@@ -4,6 +4,7 @@ import pytest
 
 import qupid._casematch_utils as util
 
+
 class TestMatchers:
     def test_match_continuous(self):
         focus_value = 1.0
