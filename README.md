@@ -15,6 +15,35 @@ You can install the most up-to-date version of qupid from PyPi using the followi
 pip install qupid
 ```
 
+## Quickstart
+
+qupid provides a convenience function to easily generate multiple matches based on matching critiera.
+This block of code will determine each viable control per case and randomly pick 10 arrangments of a single case matched to a single valid control.
+The output is a pandas DataFrame where the rows are case names and each column represents a valid mapping of case to control.
+
+```python
+from pkg_resources import resource_filename
+import pandas as pd
+import qupid
+
+metadata_fpath = resource_filename("qupid", "tests/data/asd.tsv")
+metadata = pd.read_table(metadata_fpath, sep="\t", index_col=0)
+
+asd_str = "Diagnosed by a medical professional (doctor, physician assistant)"
+no_asd_str = "I do not have this condition"
+
+background = metadata.query("asd == @no_asd_str")
+focus = metadata.query("asd == @asd_str")
+
+matches = qupid.shuffle(
+    focus=focus,
+    background=background,
+    categories=["sex", "age_years"],
+    tolerance_map={"age_years": 10},
+    iterations=100
+)
+```
+
 ## Tutorial
 
 There are three primary steps to the qupid workflow:
