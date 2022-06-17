@@ -2,6 +2,7 @@ from itertools import zip_longest
 
 import biom
 import numpy as np
+import pytest
 
 from qupid.casematch import CaseMatchOneToOne, CaseMatchCollection
 from qupid import utils
@@ -75,3 +76,11 @@ def test_filter_table_by_collection():
 
         for ctrl in cm.controls:
             assert case_ctrls[ctrl] == "control"
+
+
+def test_bad_input():
+    with pytest.raises(ValueError) as exc_info:
+        utils.filter_table_by_collection("", "")
+
+    exp_err_msg = "table must be of type <class 'biom.table.Table'>!"
+    print(exc_info.value) == exp_err_msg
