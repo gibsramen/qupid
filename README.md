@@ -241,7 +241,7 @@ CaseMatchOneToOne.load("asd_matches.best.json")
 ## Command Line Interface
 
 qupid has a command line interface to create multiple matchings from cases and possible controls.
-If providing numeric categories, the column name must be accompanied by the tolerance after a space (e.g. `age_years 5`) for a tolerance of 5 years.
+If providing numeric categories, the column name must be accompanied by the tolerance after a space (e.g. `age_years 5` for a tolerance of 5 years).
 You can pass multiple options to `--discrete-cat` or `--numeric-cat` to specify multiple matching criteria.
 
 For usage detalls, use `qupid shuffle --help`.
