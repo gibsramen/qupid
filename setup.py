@@ -30,6 +30,8 @@ classifiers = [s.strip() for s in classes.split("\n") if s]
 
 description = "Case-control matching for microbiome data."
 
+standalone = ["qupid=qupid.cli.cli:qupid"]
+
 setup(
     name="qupid",
     author="Gibraan Rahman",
@@ -52,5 +54,6 @@ setup(
     classifiers=classifiers,
     include_package_data=True,
     extras_require={"dev": ["pytest", "pytest-cov", "flake8"]},
-    package_data={"qupid": ["tests/asd.tsv"]}
+    package_data={"qupid": ["tests/asd.tsv"]},
+    entry_points={"console_scripts": standalone}
 )

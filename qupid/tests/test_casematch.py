@@ -8,6 +8,7 @@ import pytest
 
 import qupid._exceptions as mexc
 import qupid.casematch as mm
+from qupid import match_by_single, match_by_multiple
 
 
 class TestErrors:
@@ -19,7 +20,7 @@ class TestErrors:
 
         exp_intersection = {"S2", "S3"}
         with pytest.raises(mexc.IntersectingSamplesError) as exc_info:
-            mm.match_by_single(s1, s2)
+            match_by_single(s1, s2)
         assert exc_info.value.intersecting_samples == exp_intersection
 
     def test_match_by_single_no_category_overlap(self):
@@ -31,7 +32,7 @@ class TestErrors:
         exp_grp_1 = {"a", "b", "c", "d"}
         exp_grp_2 = {"e", "f", "g", "h"}
         with pytest.raises(mexc.DisjointCategoryValuesError) as exc_info:
-            mm.match_by_single(s1, s2)
+            match_by_single(s1, s2)
         assert exc_info.value.group_1_values == exp_grp_1
         assert exc_info.value.group_2_values == exp_grp_2
 
@@ -43,7 +44,7 @@ class TestErrors:
 
         exp_msg = "No valid matches found for sample S2A."
         with pytest.raises(mexc.NoMatchesError) as exc_info:
-            mm.match_by_single(s1, s2, on_failure="raise")
+            match_by_single(s1, s2, on_failure="raise")
         assert str(exc_info.value) == exp_msg
 
     def test_no_matches_continuous_raise(self):
@@ -54,8 +55,8 @@ class TestErrors:
 
         exp_msg = "No valid matches found for sample S1A."
         with pytest.raises(mexc.NoMatchesError) as exc_info:
-            mm.match_by_single(s1, s2, tolerance=0.5,
-                               on_failure="raise")
+            match_by_single(s1, s2, tolerance=0.5,
+                            on_failure="raise")
         assert str(exc_info.value) == exp_msg
 
     def test_match_by_multiple_cat_subset_err(self):
@@ -77,7 +78,7 @@ class TestErrors:
         tol_map = {"cat_2": 1.0}
 
         with pytest.raises(mexc.MissingCategoriesError) as exc_info:
-            mm.match_by_multiple(focus, bg, cats, tol_map)
+            match_by_multiple(focus, bg, cats, tol_map)
         assert exc_info.value.missing_categories == {"cat_3"}
         assert "focus" in str(exc_info.value)
 
@@ -88,7 +89,7 @@ class TestErrors:
                           index=bg_index)
 
         with pytest.raises(mexc.MissingCategoriesError) as exc_info:
-            mm.match_by_multiple(focus, bg, cats, tol_map)
+            match_by_multiple(focus, bg, cats, tol_map)
         assert exc_info.value.missing_categories == {"cat_3"}
         assert "background" in str(exc_info.value)
 
@@ -136,7 +137,7 @@ class TestErrors:
         cats = ["cat_1", "cat_2"]
 
         with pytest.raises(mexc.NoMoreControlsError) as exc_info:
-            mm.match_by_multiple(focus, bg, cats)
+            match_by_multiple(focus, bg, cats)
 
         exp_msg = "Prematurely exhausted all matching controls."
         assert str(exc_info.value) == exp_msg
@@ -187,7 +188,7 @@ class TestCaseMatch:
         s1.index = [f"S{x}A" for x in range(8)]
         s2.index = [f"S{x}B" for x in range(8)]
 
-        match = mm.match_by_single(s1, s2, 1.0)
+        match = match_by_single(s1, s2, 1.0)
         exp_match = {
             "S0A": {"S7B"},
             "S1A": {"S0B", "S7B"},
@@ -217,7 +218,7 @@ class TestCaseMatch:
         cats = ["cat_1", "cat_2"]
         tol_map = {"cat_2": 1.0}
 
-        match = mm.match_by_multiple(focus, bg, cats, tol_map)
+        match = match_by_multiple(focus, bg, cats, tol_map)
         exp_match = {
             "S0A": {"S0B"},
             "S1A": {"S1B", "S2B"},
@@ -243,7 +244,7 @@ class TestCaseMatch:
 
         cats = ["cat_1", "cat_2"]
 
-        match = mm.match_by_multiple(focus, bg, cats)
+        match = match_by_multiple(focus, bg, cats)
         exp_match = {
             "S0A": {"S0B"},
             "S1A": {"S1B"},
@@ -300,7 +301,7 @@ class TestCaseMatch:
         s1.index = [f"S{x}A" for x in range(8)]
         s2.index = [f"S{x}B" for x in range(10)]
 
-        match = mm.match_by_single(s1, s2, 1.0)
+        match = match_by_single(s1, s2, 1.0)
 
         exp_controls = set(s2.index[:-2])
         assert match.controls == exp_controls
@@ -336,7 +337,7 @@ class TestCaseMatch:
         s1.index = [f"S{x}A" for x in range(9)]
         s2.index = [f"S{x}B" for x in range(9)]
 
-        match = mm.match_by_single(s1, s2, 1.0, on_failure="ignore")
+        match = match_by_single(s1, s2, 1.0, on_failure="ignore")
         exp_match = {
             "S0A": {"S7B"},
             "S1A": {"S0B", "S7B"},
