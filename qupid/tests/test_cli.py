@@ -19,8 +19,8 @@ def test_cli():
     )
     no_asd_str = "I do not have this condition"
 
-    background = metadata.query("asd == @no_asd_str")
-    focus = metadata.query("asd == @asd_str")
+    background = metadata[metadata["asd"] == no_asd_str]
+    focus = metadata[metadata["asd"] == asd_str]
 
     bg_file = "background.tsv"
     focus_file = "focus.tsv"

@@ -1,25 +1,34 @@
 import click
 import pandas as pd
 
+from qupid import __version__
 from qupid import shuffle as _shuffle
+import qupid._descriptions as DESC
 
 
 @click.group()
+@click.version_option(__version__)
 def qupid():
     """Performs case-control matching."""
     pass
 
 
 @qupid.command()
-@click.option("-f", "--focus", required=True, type=click.Path())
-@click.option("-b", "--background", required=True, type=click.Path())
-@click.option("-i", "--iterations", required=True, type=int)
-@click.option("-dc", "--discrete-cat", multiple=True)
-@click.option("-nc", "--numeric-cat", multiple=True, type=(str, float))
-@click.option("--raise-on-failure/--ignore-on-failure", default=True)
-@click.option("--strict/--no-strict", default=True)
-@click.option("-j", "--jobs", type=int)
-@click.option("-o", "--output", type=click.Path(), required=True)
+@click.option("-f", "--focus", required=True, type=click.Path(),
+              help=DESC.FOCUS)
+@click.option("-b", "--background", required=True, type=click.Path(),
+              help=DESC.BACKGROUND)
+@click.option("-i", "--iterations", required=True, type=int,
+              help=DESC.ITERATIONS)
+@click.option("-dc", "--discrete-cat", multiple=True, help=DESC.DC)
+@click.option("-nc", "--numeric-cat", multiple=True, type=(str, float),
+              help=DESC.NC)
+@click.option("--raise-on-failure/--ignore-on-failure", default=True,
+              help=DESC.FAIL)
+@click.option("--strict/--no-strict", default=True, help=DESC.STRICT)
+@click.option("-j", "--jobs", type=int, help=DESC.JOBS)
+@click.option("-o", "--output", type=click.Path(), required=True,
+              help=DESC.OUTPUT)
 def shuffle(
     focus,
     background,
