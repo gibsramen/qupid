@@ -24,9 +24,11 @@ def qupid():
 @click.option("-nc", "--numeric-cat", multiple=True, type=(str, float),
               help=DESC.NC)
 @click.option("--raise-on-failure/--ignore-on-failure", default=True,
-              help=DESC.FAIL)
-@click.option("--strict/--no-strict", default=True, help=DESC.STRICT)
-@click.option("-j", "--jobs", type=int, help=DESC.JOBS)
+              help=DESC.FAIL, show_default=True)
+@click.option("--strict/--no-strict", default=True, help=DESC.STRICT,
+              show_default=True)
+@click.option("-j", "--jobs", type=int, help=DESC.JOBS,
+              show_default=True)
 @click.option("-o", "--output", type=click.Path(), required=True,
               help=DESC.OUTPUT)
 def shuffle(
