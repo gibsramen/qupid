@@ -5,6 +5,7 @@ from qupid import __version__
 from ._format import CaseMatchDirFmt, CaseMatchCollectionDirFmt
 from ._type import CaseMatch, OneToMany, OneToOne, CaseMatchCollection
 from ._methods import match_one_to_many, match_one_to_one
+from ._pipelines import shuffle
 
 
 plugin = Plugin(
@@ -49,6 +50,12 @@ plugin.methods.register_function(
     outputs=[("case_match_collection", CaseMatchCollection)],
     name="Match each case to one control.",
     description="Raichu"
+)
+
+plugin.pipelines.register_function(
+    function=shuffle,
+    inputs={
+    }
 )
 
 plugin.register_semantic_types(CaseMatch, OneToOne, OneToMany,
