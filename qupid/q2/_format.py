@@ -1,13 +1,13 @@
 import qiime2.plugin.model as model
 
 
-class CaseMatchOneToManyFormat(model.TextFileFormat):
+class CaseMatchFormat(model.TextFileFormat):
     def validate(self, *args):
         pass
 
 
-CaseMatchOneToManyDirFmt = model.SingleFileDirectoryFormat(
-    "CaseMatchOneToManyFormat",
+CaseMatchDirFmt = model.SingleFileDirectoryFormat(
+    "CaseMatchFormat",
     "casematch.json",
-    CaseMatchOneToManyFormat
+    CaseMatchFormat
 )
