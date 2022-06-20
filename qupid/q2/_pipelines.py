@@ -1,9 +1,3 @@
-import pandas as pd
-from qiime2 import Metadata
-
-from qupid import shuffle
-
-
 def shuffle(
     ctx,
     sample_metadata,

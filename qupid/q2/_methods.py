@@ -1,7 +1,7 @@
 import pandas as pd
 from qiime2 import Metadata
 
-from qupid.casematch import CaseMatchOneToMany, CaseMatchCollection
+from qupid.casematch import CaseMatchOneToMany
 from qupid import match_by_multiple
 
 
