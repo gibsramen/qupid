@@ -6,15 +6,15 @@ from qupid import shuffle
 
 def shuffle(
     ctx,
-    sample_metadata: Metadata,
-    case_control_column: str,
-    categories: list,
-    case_identifier: str,
-    tolerances: list = None,
-    on_match_failure: str = "raise"
-    iterations: int = 10,
-    strict: bool = True,
-    n_jobs: int = 1,
+    sample_metadata,
+    case_control_column,
+    categories,
+    case_identifier,
+    tolerances,
+    on_match_failure="raise",
+    iterations=10,
+    strict=True,
+    n_jobs=1,
 ):
     match_one_to_many = ctx.get_action("qupid", "match_one_to_many")
     match_one_to_one = ctx.get_action("qupid", "match_one_to_one")
