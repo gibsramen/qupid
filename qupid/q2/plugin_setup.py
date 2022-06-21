@@ -1,11 +1,14 @@
 import importlib
 
 from qiime2.plugin import Plugin, List, Str, Choices, Metadata, Bool, Int
+from q2_types.distance_matrix import DistanceMatrix
+
 from qupid import __version__
 from qupid import _descriptions as DESC
 from ._format import CaseMatchDirFmt, CaseMatchCollectionDirFmt
 from ._type import CaseMatch, OneToMany, OneToOne, CaseMatchCollection
 from ._methods import match_one_to_many, match_one_to_one
+from ._visualizers import assess_matches_multivariate
 from ._pipelines import shuffle
 
 
@@ -121,6 +124,31 @@ plugin.pipelines.register_function(
     description=(
         "Pipeline to get all valid controls per case and perform multiple "
         "iterations of matching each case to a single control."
+    )
+)
+
+plugin.visualizers.register_function(
+    function=assess_matches_multivariate,
+    inputs={
+        "case_match_collection": CaseMatchCollection,
+        "distance_matrix": DistanceMatrix
+    },
+    input_descriptions={
+        "case_match_collection": "Iterations of one-to-one matchings.",
+        "distance_matrix": "Distance matrix with all cases and controls."
+    },
+    parameters={
+        "permutations": Int,
+        "n_jobs": Int
+    },
+    parameter_descriptions={
+        "permutations": "Number of PERMANOVA permutations.",
+        "n_jobs": DESC.JOBS
+    },
+    name="Run PERMANOVA on all one-to-one matches.",
+    description=(
+        "Plot the distribution of p-values from PERMANOVA on all one-to-one "
+        "matches (case vs. control)."
     )
 )
 
