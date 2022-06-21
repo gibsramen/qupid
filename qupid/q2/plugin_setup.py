@@ -1,6 +1,7 @@
 import importlib
 
-from qiime2.plugin import Plugin, List, Str, Choices, Metadata, Bool, Int
+from qiime2.plugin import (Plugin, List, Str, Choices, Metadata, Bool, Int,
+                           MetadataColumn, Numeric)
 from q2_types.distance_matrix import DistanceMatrix
 
 from qupid import __version__
@@ -8,7 +9,8 @@ from qupid import _descriptions as DESC
 from ._format import CaseMatchDirFmt, CaseMatchCollectionDirFmt
 from ._type import CaseMatch, OneToMany, OneToOne, CaseMatchCollection
 from ._methods import match_one_to_many, match_one_to_one
-from ._visualizers import assess_matches_multivariate
+from ._visualizers import (assess_matches_multivariate,
+                           assess_matches_univariate)
 from ._pipelines import shuffle
 
 
@@ -151,6 +153,30 @@ plugin.visualizers.register_function(
         "matches (case vs. control)."
     )
 )
+
+plugin.visualizers.register_function(
+    function=assess_matches_univariate,
+    inputs={
+        "case_match_collection": CaseMatchCollection,
+    },
+    input_descriptions={
+        "case_match_collection": "Iterations of one-to-one matchings.",
+    },
+    parameters={
+        "data": MetadataColumn[Numeric],
+        "n_jobs": Int
+    },
+    parameter_descriptions={
+        "data": "Numeric data to assess matches.",
+        "n_jobs": DESC.JOBS
+    },
+    name="Run t-test on all one-to-one matches.",
+    description=(
+        "Plot the distribution of p-values from t-test on all one-to-one "
+        "matches (case vs. control)."
+    )
+)
+
 
 plugin.register_semantic_types(CaseMatch, OneToOne, OneToMany,
                                CaseMatchCollection)
