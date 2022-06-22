@@ -297,7 +297,7 @@ Commands:
 
 ### Matching one-to-many
 
-Use ``qiime qupid match-one-to-many` to match each case to all possible controls.
+Use `qiime qupid match-one-to-many` to match each case to all possible controls.
 Note that for numeric categories, you must pass in tolerances in the form of `<column_name>+-<tolerance>`.
 
 ```
