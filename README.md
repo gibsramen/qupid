@@ -1,4 +1,5 @@
-[![GitHub Actions CI](https://github.com/gibsramen/qupid/actions/workflows/main.yml/badge.svg)](https://github.com/gibsramen/qupid/actions)
+[![Main CI](https://github.com/gibsramen/qupid/actions/workflows/main.yml/badge.svg)](https://github.com/gibsramen/qupid/actions)
+[![QIIME 2 CI](https://github.com/biocore/qupid/actions/workflows/q2.yml/badge.svg)](https://github.com/biocore/qupid/actions/workflows/q2.yml)
 [![PyPI](https://img.shields.io/pypi/v/qupid.svg)](https://pypi.org/project/qupid)
 
 # Qupid
@@ -217,7 +218,7 @@ import seaborn as sns
 sns.histplot(test_results["p-value"])
 ```
 
-![p-value Histogram](./imgs/asd_match_pvals.png)
+![p-value Histogram](https://raw.githubusercontent.com/gibsramen/qupid/main/imgs/asd_match_pvals.png)
 
 We see that most of the p-values are near zero which makes sense because we simulated our data with a difference between ASD and non-ASD samples.
 
