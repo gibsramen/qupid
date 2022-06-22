@@ -258,6 +258,106 @@ qupid shuffle \
     --output matches.tsv
 ```
 
+## QIIME 2 Usage
+
+qupid provides support for the popular QIIME 2 framework of microbiome data analysis.
+We assume in this tutorial that you are familiar with using QIIME 2 on the command line.
+If not, we recommend you read the excellent [documentation](https://docs.qiime2.org/) before you get started with qupid.
+
+Run `qiime qupid --help` to see all possible commands.
+
+```
+$ qiime qupid --help
+Usage: qiime qupid [OPTIONS] COMMAND [ARGS]...
+
+  Description: Match cases to controls based on metadata criteria for
+  microbiome data.
+
+  Plugin website: https://github.com/gibsramen/qupid
+
+  Getting user support: Please post to the QIIME 2 forum for help with this
+  plugin: https://forum.qiime2.org
+
+Options:
+  --version            Show the version and exit.
+  --example-data PATH  Write example data and exit.
+  --citations          Show citations and exit.
+  --help               Show this message and exit.
+
+Commands:
+  assess-matches-multivariate  Run PERMANOVA on all one-to-one matches.
+  assess-matches-univariate    Run t-test on all one-to-one matches.
+  match-one-to-many            Match each case to all possible controls.
+  match-one-to-one             Match each case to one control for multiple
+                               iterations.
+
+  shuffle                      Create multiple one-to-one case-control matches
+                               given matching criteria.
+```
+
+### Matching one-to-many
+
+Use ``qiime qupid match-one-to-many` to match each case to all possible controls.
+Note that for numeric categories, you must pass in tolerances in the form of `<column_name>+-<tolerance>`.
+
+```
+qiime qupid match-one-to-many \
+    --m-sample-metadata-file metadata.tsv \
+    --p-case-control-column case_control \
+    --p-categories sex age_years \
+    --p-case-identifier case \
+    --p-tolerances age_years+-10 \
+    --o-case-match-one-to-many cm_one_to_many.qza
+```
+
+### Matching one-to-one
+
+With a one-to-many match, you can generate multiple possible one-to-one matches using `qiime qupid match-one-to-one`.
+
+```
+qiime qupid match-one-to-one \
+    --i-case-match-one-to-many cm_one_to_many.qza \
+    --p-iterations 10 \
+    --o-case-match-collection cm_collection.qza
+```
+
+### qupid shuffle
+
+The previous two commands can be run sequentially using `qiime qupid shuffle`.
+
+```
+qiime qupid shuffle \
+    --m-sample-metadata-file metadata.tsv \
+    --p-case-control-column case_control \
+    --p-categories sex age_years \
+    --p-case-identifier case \
+    --p-tolerances age_years+-10 \
+    --p-iterations 10 \
+    --output-dir shuffle
+```
+
+### Statistical assessment of matches
+
+You can assess how different cases are from controls using both univariate data (such as alpha diversity) or multivariate data (distance matrices).
+The result will be a histogram of p-values from either a t-test (univariate) or PERMANOVA (multivariate) comparing cases to controls.
+Note that for either command, the input data must contain values for all possible cases and controls.
+
+```
+qiime qupid assess-matches-univariate \
+    --i-case-match-collection cm_collection.qza \
+    --m-data-file data.tsv \
+    --m-data-column faith_pd \
+    --o-visualization univariate_p_values.qzv
+```
+
+```
+qiime qupid assess-matches-multivariate \
+    --i-case-match-collection cm_collection.qza \
+    --i-distance-matrix uw_unifrac_distance_matrix.qza \
+    --p-permutations 999 \
+    --o-visualization multivariate_p_values.qzv
+```
+
 ## Help with qupid
 
 If you encounter a bug in qupid, please post a GitHub issue and we will get to it as soon as we can. We welcome any ideas or documentation updates/fixes so please submit an issue and/or a pull request if you have thoughts on making qupid better.
