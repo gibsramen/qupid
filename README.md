@@ -267,35 +267,6 @@ If not, we recommend you read the excellent [documentation](https://docs.qiime2.
 
 Run `qiime qupid --help` to see all possible commands.
 
-```
-$ qiime qupid --help
-Usage: qiime qupid [OPTIONS] COMMAND [ARGS]...
-
-  Description: Match cases to controls based on metadata criteria for
-  microbiome data.
-
-  Plugin website: https://github.com/gibsramen/qupid
-
-  Getting user support: Please post to the QIIME 2 forum for help with this
-  plugin: https://forum.qiime2.org
-
-Options:
-  --version            Show the version and exit.
-  --example-data PATH  Write example data and exit.
-  --citations          Show citations and exit.
-  --help               Show this message and exit.
-
-Commands:
-  assess-matches-multivariate  Run PERMANOVA on all one-to-one matches.
-  assess-matches-univariate    Run t-test on all one-to-one matches.
-  match-one-to-many            Match each case to all possible controls.
-  match-one-to-one             Match each case to one control for multiple
-                               iterations.
-
-  shuffle                      Create multiple one-to-one case-control matches
-                               given matching criteria.
-```
-
 ### Matching one-to-many
 
 Use `qiime qupid match-one-to-many` to match each case to all possible controls.
