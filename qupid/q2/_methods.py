@@ -22,8 +22,11 @@ def match_one_to_many(
     ]
 
     # age_years+-5 bmi+-3.0
-    tolerance_map = dict([x.split("+-") for x in tolerances])
-    tolerance_map = {k: float(v) for k, v in tolerance_map.items()}
+    if tolerances is None:
+        tolerance_map = None
+    else:
+        tolerance_map = dict([x.split("+-") for x in tolerances])
+        tolerance_map = {k: float(v) for k, v in tolerance_map.items()}
 
     cm_one_to_many = match_by_multiple(
         focus=focus,

@@ -257,14 +257,18 @@ class CaseMatchCollection:
         return df
 
     @classmethod
+    def from_dataframe(cls, collection: pd.DataFrame) -> "CaseMatchCollection":
+        casematches = []
+        for col in collection.columns:
+            mapping = {k: {v} for k, v in collection[col].to_dict().items()}
+            casematches.append(CaseMatchOneToOne(mapping))
+        return cls(casematches)
+
+    @classmethod
     def load(cls, path) -> "CaseMatchCollection":
         """Load from TSV."""
         df = pd.read_table(path, sep="\t", index_col=0)
-        casematches = []
-        for col in df.columns:
-            mapping = {k: {v} for k, v in df[col].to_dict().items()}
-            casematches.append(CaseMatchOneToOne(mapping))
-        return cls(casematches)
+        return cls.from_dataframe(df)
 
     def apply(self, func: Callable) -> Iterator:
         """Apply a function to each CaseMatchOneToOne in a collection.

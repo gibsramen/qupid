@@ -21,15 +21,11 @@ def assess_matches_multivariate(
     fig_loc = os.path.join(output_dir, "permanova_pvalues.svg")
     fig_loc2 = os.path.join(output_dir, "permanova_pvalues.pdf")
 
-    coll_df = case_match_collection
-    casematches = []
-    for col in coll_df.columns:
-        mapping = {k: {v} for k, v in coll_df[col].to_dict().items()}
-        casematches.append(CaseMatchOneToOne(mapping))
-    cm_coll = CaseMatchCollection(casematches)
+    coll = CaseMatchCollection.from_dataframe(case_match_collection)
+    print(distance_matrix.shape)
 
     pnova_df = stats.bulk_permanova(
-        case_match_collection,
+        coll,
         distance_matrix,
         permutations,
         n_jobs,
@@ -72,15 +68,8 @@ def assess_matches_univariate(
     fig_loc = os.path.join(output_dir, "univariate_pvalues.svg")
     fig_loc2 = os.path.join(output_dir, "univariate_pvalues.pdf")
 
-    coll_df = case_match_collection
-    casematches = []
-    for col in coll_df.columns:
-        mapping = {k: {v} for k, v in coll_df[col].to_dict().items()}
-        casematches.append(CaseMatchOneToOne(mapping))
-    cm_coll = CaseMatchCollection(casematches)
-
     univariate_df = stats.bulk_univariate_test(
-        case_match_collection,
+        CaseMatchCollection.from_dataframe(case_match_collection),
         data,
         "t",
         n_jobs

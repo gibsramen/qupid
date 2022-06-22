@@ -4,7 +4,7 @@ def shuffle(
     case_control_column,
     categories,
     case_identifier,
-    tolerances,
+    tolerances=None,
     on_match_failure="raise",
     iterations=10,
     strict=True,

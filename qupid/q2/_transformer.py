@@ -44,4 +44,4 @@ def _5(data: pd.DataFrame) -> CaseMatchCollectionFormat:
 
 @plugin.register_transformer
 def _6(ff: CaseMatchCollectionFormat) -> pd.DataFrame:
-    return pd.read_table(str(ff), sep="\t", index=True)
+    return pd.read_table(str(ff), sep="\t", index_col=0)
