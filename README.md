@@ -1,15 +1,15 @@
 [![GitHub Actions CI](https://github.com/gibsramen/qupid/actions/workflows/main.yml/badge.svg)](https://github.com/gibsramen/qupid/actions)
 [![PyPI](https://img.shields.io/pypi/v/qupid.svg)](https://pypi.org/project/qupid)
 
-# qupid
+# Qupid
 
 (Pronounced like cupid)
 
-qupid is a tool for generating and statistically evaluating *multiple* case-control matchings of microbiome data.
+Qupid is a tool for generating and statistically evaluating *multiple* case-control matchings of microbiome data.
 
 ## Installation
 
-You can install the most up-to-date version of qupid from PyPi using the following command:
+You can install the most up-to-date version of Qupid from PyPi using the following command:
 
 ```
 pip install qupid
@@ -17,7 +17,7 @@ pip install qupid
 
 ## Quickstart
 
-qupid provides a convenience function, `shuffle`, to easily generate multiple matches based on matching critiera.
+Qupid provides a convenience function, `shuffle`, to easily generate multiple matches based on matching critiera.
 This block of code will determine each viable control per case and randomly pick 10 arrangments of a single case matched to a single valid control.
 The output is a pandas DataFrame where the rows are case names and each column represents a valid mapping of case to control.
 
@@ -46,17 +46,17 @@ matches = qupid.shuffle(
 
 ## Tutorial
 
-There are three primary steps to the qupid workflow:
+There are three primary steps to the Qupid workflow:
 
 1. Match each case to all valid controls
 2. Generate multiple one-to-one matchings
 3. Evaluate the statistical differences between cases and controls for all matchings
 
 To match each case to all valid controls, we need to first establish matching criteria.
-qupid allows matching by both categorical metadata (exact matches) and continuous metadata (matching within provided tolerance).
+Qupid allows matching by both categorical metadata (exact matches) and continuous metadata (matching within provided tolerance).
 You can match on either a single metadata column or based on multiple.
 
-In qupid, the cases to be matched are referred to as the "focus" set, while the set of all possible controls is called the "background".
+In Qupid, the cases to be matched are referred to as the "focus" set, while the set of all possible controls is called the "background".
 For this tutorial we will be used data from the American Gut Project to match cases to controls in samples from people with autism.
 
 First, we'll load in the provided example metadata and separate it into the focus (samples from people with autism) and the background (samples from people who do not have autism).
@@ -81,7 +81,7 @@ focus = metadata.query("asd == @asd_str")
 ### Matching each case to all possible controls
 
 Next, we want to perform case-control matching on sex and age.
-Sex is a discrete factor, so qupid will attempt to find exact matches (e.g. male to male, female to female).
+Sex is a discrete factor, so Qupid will attempt to find exact matches (e.g. male to male, female to female).
 However, age is a continuous factor; as a result, we should provide a tolerance value (e.g. match within 10 years).
 We use the `match_by_multiple` function to match based on more than one metadata category.
 
@@ -111,7 +111,7 @@ print(len(cm.cases), len(cm.controls))
 
 This tells us that we have 45 cases and 1785 possible controls.
 Because of this, there are many possible sets of valid matchings of each case to a single control.
-We can use qupid to generate many such cases.
+We can use Qupid to generate many such cases.
 
 ```python
 results = cm.create_matched_pairs(iterations=100)
@@ -125,7 +125,7 @@ We can verify that each entry has exactly 45 cases and 45 controls.
 print(len(results[0].cases), len(results[0].controls))
 ```
 
-qupid provides a convenience method to convert a `CaseMatchCollection` object into a pandas DataFrame.
+Qupid provides a convenience method to convert a `CaseMatchCollection` object into a pandas DataFrame.
 The DataFrame index corresponds to the cases, while each column represents a distinct set of matching controls.
 The value in a cell represents a matching control to the row's case.
 
@@ -149,7 +149,7 @@ S10317.000067637  S10317.000067747  S10317.000098161  ...  S10317.000017116  S10
 ### Statistical assessment of matchings
 
 Once we have this list of matchings, we want to determine how statistically difference cases are from controls based on some values.
-qupid supports two types of statistical tests: univariate and multivariate.
+Qupid supports two types of statistical tests: univariate and multivariate.
 Univariate data is in the form of a vector where each case and control has a single value.
 This can be alpha diversity, log-ratios, etc.
 Multivariate data is in the form of a distance matrix where each entry is the pairwise distance between two samples, e.g. from beta diversity analysis.
@@ -223,7 +223,7 @@ We see that most of the p-values are near zero which makes sense because we simu
 
 ### Saving and loading qupid results
 
-qupid allows the saving and loading of both `CaseMatch` and `CaseMatchCollection` objects.
+Qupid allows the saving and loading of both `CaseMatch` and `CaseMatchCollection` objects.
 `CaseMatchOneToMany` and `CaseMatchOneToOne` objects are saved as JSON files while `CaseMatchCollection` objects are saved as pandas DataFrames.
 
 ```python
@@ -240,7 +240,7 @@ CaseMatchOneToOne.load("asd_matches.best.json")
 
 ## Command Line Interface
 
-qupid has a command line interface to create multiple matchings from cases and possible controls.
+Qupid has a command line interface to create multiple matchings from cases and possible controls.
 If providing numeric categories, the column name must be accompanied by the tolerance after a space (e.g. `age_years 5` for a tolerance of 5 years).
 You can pass multiple options to `--discrete-cat` or `--numeric-cat` to specify multiple matching criteria.
 
@@ -260,9 +260,9 @@ qupid shuffle \
 
 ## QIIME 2 Usage
 
-qupid provides support for the popular QIIME 2 framework of microbiome data analysis.
+Qupid provides support for the popular QIIME 2 framework of microbiome data analysis.
 We assume in this tutorial that you are familiar with using QIIME 2 on the command line.
-If not, we recommend you read the excellent [documentation](https://docs.qiime2.org/) before you get started with qupid.
+If not, we recommend you read the excellent [documentation](https://docs.qiime2.org/) before you get started with Qupid.
 
 Run `qiime qupid --help` to see all possible commands.
 
@@ -321,7 +321,7 @@ qiime qupid match-one-to-one \
     --o-case-match-collection cm_collection.qza
 ```
 
-### qupid shuffle
+### Qupid shuffle
 
 The previous two commands can be run sequentially using `qiime qupid shuffle`.
 
@@ -358,6 +358,6 @@ qiime qupid assess-matches-multivariate \
     --o-visualization multivariate_p_values.qzv
 ```
 
-## Help with qupid
+## Help with Qupid
 
-If you encounter a bug in qupid, please post a GitHub issue and we will get to it as soon as we can. We welcome any ideas or documentation updates/fixes so please submit an issue and/or a pull request if you have thoughts on making qupid better.
+If you encounter a bug in Qupid, please post a GitHub issue and we will get to it as soon as we can. We welcome any ideas or documentation updates/fixes so please submit an issue and/or a pull request if you have thoughts on making Qupid better.
