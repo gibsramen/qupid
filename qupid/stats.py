@@ -110,7 +110,6 @@ def bulk_univariate_test(
         for cm in casematches
     )
     results = pd.DataFrame.from_records(results)
-    print(results)
     results["method_name"] = method_str
     results["test_statistic_name"] = stat_str
     results["sample_size"] = len(casematches[0].cases) * 2

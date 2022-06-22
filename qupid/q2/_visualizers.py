@@ -21,7 +21,6 @@ def assess_matches_multivariate(
     fig_loc2 = os.path.join(output_dir, "permanova_pvalues.pdf")
 
     coll = CaseMatchCollection.from_dataframe(case_match_collection)
-    print(distance_matrix.shape)
 
     pnova_df = stats.bulk_permanova(
         coll,
