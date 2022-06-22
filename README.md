@@ -1,5 +1,5 @@
 [![Main CI](https://github.com/gibsramen/qupid/actions/workflows/main.yml/badge.svg)](https://github.com/gibsramen/qupid/actions)
-[![QIIME 2 CI](https://github.com/biocore/qupid/actions/workflows/q2.yml/badge.svg)](https://github.com/biocore/qupid/actions/workflows/q2.yml)
+[![QIIME 2 CI](https://github.com/gibsramen/qupid/actions/workflows/q2.yml/badge.svg)](https://github.com/gibsramen/qupid/actions/workflows/q2.yml)
 [![PyPI](https://img.shields.io/pypi/v/qupid.svg)](https://pypi.org/project/qupid)
 
 # Qupid
