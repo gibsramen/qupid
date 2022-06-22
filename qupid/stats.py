@@ -110,6 +110,7 @@ def bulk_univariate_test(
         for cm in casematches
     )
     results = pd.DataFrame.from_records(results)
+    print(results)
     results["method_name"] = method_str
     results["test_statistic_name"] = stat_str
     results["sample_size"] = len(casematches[0].cases) * 2
@@ -163,8 +164,8 @@ def _single_univariate_test(
     :returns: Test results
     :rtype: pd.Series
     """
-    case_vals = values.loc[list(casematch.cases)]
-    ctrl_vals = values.loc[list(casematch.controls)]
+    case_vals = values.loc[list(casematch.cases)].values.ravel()
+    ctrl_vals = values.loc[list(casematch.controls)].values.ravel()
     res = test_fn(case_vals, ctrl_vals)
     res = pd.Series(res, index=["test_statistic", "p-value"])
     return res

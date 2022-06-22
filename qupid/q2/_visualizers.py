@@ -2,11 +2,10 @@ import os
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from qiime2 import NumericMetadataColumn
 import seaborn as sns
 from skbio import DistanceMatrix
 
-from qupid.casematch import CaseMatchOneToOne, CaseMatchCollection
+from qupid.casematch import CaseMatchCollection
 from qupid import stats
 
 
@@ -70,19 +69,19 @@ def assess_matches_univariate(
 
     univariate_df = stats.bulk_univariate_test(
         CaseMatchCollection.from_dataframe(case_match_collection),
-        data,
+        data.to_dataframe().squeeze(),  # hack to deal with Q2 Metadata
         "t",
         n_jobs
     )
 
     results_loc = os.path.join(output_dir, "univariate_results.tsv")
-    pnova_df.to_csv(results_loc, sep="\t", index=True)
+    univariate_df.to_csv(results_loc, sep="\t", index=True)
 
     fig, ax = plt.subplots(1, 1, dpi=300, facecolor="white")
-    sns.histplot(pnova_df["p-value"], ax=ax)
+    sns.histplot(univariate_df["p-value"], ax=ax)
     ax.set_xlabel("p-value")
     ax.set_ylabel("Count")
-    ax.set_title(f"t-test p-values")
+    ax.set_title("t-test p-values")
 
     plt.savefig(fig_loc)
     plt.savefig(fig_loc2)
@@ -95,7 +94,8 @@ def assess_matches_univariate(
             "<a href='univariate_pvalues.pdf' target='_blank'"
             "rel='noopener noreferrer'>"
             "Download plot as PDF</a><br>\n"
-            "<a href='univariate_results.tsv'>Download results as TSV</a><br>\n"
+            "<a href='univariate_results.tsv'>"
+            "Download results as TSV</a><br>\n"
         )
         f.write("<img src='univariate_pvalues.svg' alt='p-values'>\n")
         f.write("</div>\n")
