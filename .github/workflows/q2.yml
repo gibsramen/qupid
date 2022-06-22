@@ -2,9 +2,15 @@ name: "QIIME 2 CI"
 
 on:
   pull_request:
+    paths-ignore:
+      - "README.md"
+      - "imgs/**"
     branches:
       - main
   push:
+    paths-ignore:
+      - "README.md"
+      - "imgs/**"
     branches:
       - main
 
