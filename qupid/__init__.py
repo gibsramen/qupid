@@ -3,7 +3,7 @@ from .casematch import (CaseMatchOneToMany, CaseMatchOneToOne,
 from .qupid import match_by_single, match_by_multiple, shuffle
 
 
-__version__ = "0.0.2"
+__version__ = "0.1.0"
 
 __all__ = ["CaseMatchOneToMany", "CaseMatchOneToOne", "CaseMatchCollection",
            "match_by_single", "match_by_multiple", "shuffle"]

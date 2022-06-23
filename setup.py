@@ -15,7 +15,7 @@ with open("README.md") as f:
     long_description = f.read()
 
 classes = """
-    Development Status :: 3 - Alpha
+    Development Status :: 4 - Beta
     License :: OSI Approved :: BSD License
     Topic :: Software Development :: Libraries
     Topic :: Scientific/Engineering
@@ -40,6 +40,7 @@ setup(
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
+    url="https://github.com/gibsramen/qupid",
     version=version,
     license="BSD-3-Clause",
     packages=find_packages(),
@@ -50,12 +51,13 @@ setup(
         "scikit-bio",
         "networkx",
         "joblib",
-        "scipy"
+        "scipy",
+        "click",
+        "seaborn"
     ],
     classifiers=classifiers,
     include_package_data=True,
     extras_require={"dev": ["pytest", "pytest-cov", "flake8"]},
-    package_data={"qupid": ["tests/asd.tsv"]},
     entry_points={"console_scripts": standalone,
                   "qiime2.plugins": q2_cmds}
 )
