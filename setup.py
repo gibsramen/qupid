@@ -31,6 +31,7 @@ classifiers = [s.strip() for s in classes.split("\n") if s]
 description = "Case-control matching for microbiome data."
 
 standalone = ["qupid=qupid.cli.cli:qupid"]
+q2_cmds = ["q2-qupid=qupid.q2.plugin_setup:plugin"]
 
 setup(
     name="qupid",
@@ -55,5 +56,6 @@ setup(
     include_package_data=True,
     extras_require={"dev": ["pytest", "pytest-cov", "flake8"]},
     package_data={"qupid": ["tests/asd.tsv"]},
-    entry_points={"console_scripts": standalone}
+    entry_points={"console_scripts": standalone,
+                  "qiime2.plugins": q2_cmds}
 )

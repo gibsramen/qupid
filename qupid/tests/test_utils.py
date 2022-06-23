@@ -81,4 +81,4 @@ def test_bad_input():
         utils.filter_table_by_collection("", "")
 
     exp_err_msg = "table must be of type <class 'biom.table.Table'>!"
-    print(exc_info.value) == exp_err_msg
+    assert str(exc_info.value) == exp_err_msg

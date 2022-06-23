@@ -163,8 +163,8 @@ def _single_univariate_test(
     :returns: Test results
     :rtype: pd.Series
     """
-    case_vals = values.loc[list(casematch.cases)]
-    ctrl_vals = values.loc[list(casematch.controls)]
+    case_vals = values.loc[list(casematch.cases)].values.ravel()
+    ctrl_vals = values.loc[list(casematch.controls)].values.ravel()
     res = test_fn(case_vals, ctrl_vals)
     res = pd.Series(res, index=["test_statistic", "p-value"])
     return res
