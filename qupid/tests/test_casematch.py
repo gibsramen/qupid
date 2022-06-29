@@ -228,6 +228,21 @@ class TestCaseMatch:
         }
         assert match.case_control_map == exp_match
 
+    def test_lt(self):
+        cm_1 = mm.CaseMatchOneToOne({
+            "S0A": {"S1B"},
+            "S1A": {"S2B"},
+            "S2A": {"S3B"},
+            "S3A": {"S4B"}
+        })
+        cm_2 = mm.CaseMatchOneToOne({
+            "S0A": {"S1B"},
+            "S1A": {"S2B"},
+            "S2A": {"S4B"},
+            "S3A": {"S3B"}
+        })
+        assert cm_1 < cm_2
+
     def test_bool_column_type(self):
         focus_cat_1 = ["A", "B", "C", "B", "C"]
         focus_cat_2 = [True, False, False, True, False]
@@ -323,8 +338,9 @@ class TestCaseMatch:
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
         match = mm.CaseMatchOneToMany.load(json_in)
         G = nx.Graph(match.case_control_map)
+        rng = np.random.default_rng()
         matched_pairs = match._create_matched_pairs_single(
-            G, cases=match.cases
+            G, cases=match.cases, rng=rng
         )
 
         assert len(matched_pairs) == 6
@@ -350,6 +366,32 @@ class TestCaseMatch:
             "S8A": set()
         }
         assert match.case_control_map == exp_match
+
+    # https://stackoverflow.com/a/21857841
+    # Run test multiple times
+    @pytest.mark.parametrize("execution_number", range(10))
+    def test_reproducibility(self, execution_number):
+        json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
+        match = mm.CaseMatchOneToMany.load(json_in)
+        # Total is 36 so guaranteed to not hit all of them
+        all_matched_pairs = match.create_matched_pairs(
+            iterations=5, seed=63, n_jobs=2
+        )
+        match_df = all_matched_pairs.to_dataframe()
+
+        exp_matrix = {
+            0: ["S0B", "S0B", "S1B", "S1B", "S2B"],
+            1: ["S1B", "S1B", "S2B", "S2B", "S1B"],
+            2: ["S4B", "S4B", "S4B", "S4B", "S4B"],
+            3: ["S5B", "S8B", "S5B", "S6B", "S7B"],
+            4: ["S3B", "S3B", "S3B", "S3B", "S3B"],
+            5: ["S8B", "S6B", "S8B", "S8B", "S8B"]
+        }
+        exp_df = pd.DataFrame(exp_matrix).T
+        exp_df.index = [f"S{x}A" for x in range(6)]
+        exp_df.index.name = "case_id"
+
+        pd.testing.assert_frame_equal(exp_df, match_df)
 
 
 class TestCaseMatchCollection:

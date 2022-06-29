@@ -1,12 +1,18 @@
 import collections
-import random
+import numpy as np
+from typing import Iterable
 
+import networkx as nx
 from networkx.algorithms.bipartite import sets as bipartite_sets
 
 INFINITY = float("inf")
 
 
-def hopcroft_karp_matching(G, top_nodes=None):
+def hopcroft_karp_matching(
+    G: nx.Graph,
+    seed: int,
+    top_nodes: Iterable = None
+) -> dict:
     """Returns a maximum cardinality matching of the bipartite graph G.
 
     NOTE: This function is modified from the NetworkX implementation:
@@ -25,6 +31,8 @@ def hopcroft_karp_matching(G, top_nodes=None):
 
     :returns: Dictionary matching each case to a single control
     """
+    rng = np.random.default_rng(seed)
+
     def breadth_first_search():
         for v in case:
             if casematches[v] is None:
@@ -45,8 +53,8 @@ def hopcroft_karp_matching(G, top_nodes=None):
     def depth_first_search(v):
         if v is not None:
             # The following 3 lines have been modified from the original code
-            connections = list(G[v])
-            random.shuffle(connections)
+            connections = sorted(list(G[v]))
+            rng.shuffle(connections)
             for u in connections:
                 if distances[controlmatches[u]] == distances[v] + 1:
                     if depth_first_search(controlmatches[u]):
@@ -59,6 +67,11 @@ def hopcroft_karp_matching(G, top_nodes=None):
 
     # Initialize the "global" variables that maintain state during the search.
     case, control = bipartite_sets(G, top_nodes)
+
+    # Cases & controls come out as sets which are unordered
+    # We sort them here so the random state works
+    case = sorted(case)
+    control = sorted(control)
     casematches = {v: None for v in case}
     controlmatches = {v: None for v in control}
     distances = {}

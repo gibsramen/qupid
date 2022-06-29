@@ -1,4 +1,5 @@
 import networkx as nx
+import numpy as np
 import pytest
 
 from qupid.matching import hopcroft_karp_matching
@@ -30,8 +31,9 @@ def simple_graph():
 
 def test_hk(simple_graph):
     all_matches = set()
+    rng = np.random.default_rng()
     for i in range(20):
-        M = hopcroft_karp_matching(simple_graph)
+        M = hopcroft_karp_matching(simple_graph, rng=rng)
         match = frozenset(tuple((x, M[x]) for x in M))
         all_matches.add(match)
 
