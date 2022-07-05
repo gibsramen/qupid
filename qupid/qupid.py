@@ -120,8 +120,9 @@ def match_by_multiple(
         for fidx, fhits in observed.items():
             # Reduce the matches with successive categories
             matches[fidx] = matches[fidx] & fhits
-            if not matches[fidx] and on_failure == "raise":
-                raise exc.NoMoreControlsError()
+            if not matches[fidx]:
+                if on_failure == "raise":
+                    raise exc.NoMoreControlsError()
 
     metadata = pd.concat([focus, background])
     return CaseMatchOneToMany(matches, metadata)
