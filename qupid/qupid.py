@@ -7,8 +7,7 @@ import pandas as pd
 from .casematch import CaseMatchOneToMany
 from . import _exceptions as exc
 from . import _casematch_utils as util
-
-VALID_ON_FAILURE_OPTS = ["raise", "warn", "continue"]
+from ._descriptions import VALID_ON_FAILURE_OPTS
 
 
 def match_by_single(
@@ -36,7 +35,7 @@ def match_by_single(
     :returns: Matched control samples
     :rtype: qupid.CaseMatchOneToMany
     """
-    if on_failure not in VALID_ON_FAILURE_OPTS:
+    if on_failure.lower() not in VALID_ON_FAILURE_OPTS:
         raise ValueError(
             "Invalid argument for 'on_failure', must be one of "
             f"{VALID_ON_FAILURE_OPTS}"

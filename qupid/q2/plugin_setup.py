@@ -45,7 +45,7 @@ plugin.methods.register_function(
         "categories": List[Str],
         "case_identifier": Str,
         "tolerances": List[Str],
-        "on_failure": Str % Choices({"raise", "ignore"})
+        "on_failure": Str % Choices({"raise", "warn", "continue"})
     },
     parameter_descriptions={
         "sample_metadata": MD_DESC,

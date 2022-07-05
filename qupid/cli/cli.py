@@ -23,7 +23,9 @@ def qupid():
 @click.option("-dc", "--discrete-cat", multiple=True, help=DESC.DC)
 @click.option("-nc", "--numeric-cat", multiple=True, type=(str, float),
               help=DESC.NC)
-@click.option("--raise-on-failure/--ignore-on-failure", default=True,
+@click.option("--on-failure", default="raise",
+              type=click.Choice(DESC.VALID_ON_FAILURE_OPTS,
+                                case_sensitive=False),
               help=DESC.FAIL, show_default=True)
 @click.option("--strict/--no-strict", default=True, help=DESC.STRICT,
               show_default=True)
@@ -37,7 +39,7 @@ def shuffle(
     iterations,
     discrete_cat,
     numeric_cat,
-    raise_on_failure,
+    on_failure,
     strict,
     jobs,
     output
@@ -58,7 +60,7 @@ def shuffle(
         categories=cats,
         tolerance_map=tol_map,
         iterations=iterations,
-        on_failure="raise" if raise_on_failure else "ignore",
+        on_failure=on_failure,
         strict=strict,
         n_jobs=jobs
     )
