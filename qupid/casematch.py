@@ -239,6 +239,7 @@ class CaseMatchOneToOne(_BaseCaseMatch):
                 return True
             if v1 > v2:
                 return False
+        return False  # Instances are equal
 
     def __gt__(self, other) -> bool:
         """Used for sorting."""
@@ -249,7 +250,9 @@ class CaseMatchOneToOne(_BaseCaseMatch):
             v2 = list(v2)[0]
             if v1 > v2:
                 return True
-        return False
+            if v1 < v2:
+                return False
+        return False  # Instances are equal
 
 
 class CaseMatchCollection:
