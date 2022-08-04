@@ -334,17 +334,19 @@ class TestCaseMatch:
         match_df = all_matched_pairs.to_dataframe()
         assert match_df.shape == (len(match.cases), 36)
 
-    def test_create_matched_pairs_single(self):
+    def test_get_cm_one_to_one(self):
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
         match = mm.CaseMatchOneToMany.load(json_in)
         G = nx.Graph(match.case_control_map)
-        rng = np.random.default_rng()
-        matched_pairs = match._create_matched_pairs_single(
-            G, cases=match.cases, rng=rng
-        )
 
-        assert len(matched_pairs) == 6
-        ctrl_lens = [len(v) == 1 for k, v in matched_pairs.items()]
+        matched_pairs = match._get_cm_one_to_one(G, False, None)
+
+        assert isinstance(matched_pairs, mm.CaseMatchOneToOne)
+
+        ctrl_lens = [
+            len(v) == 1
+            for k, v in matched_pairs.case_control_map.items()
+        ]
         assert all(ctrl_lens)
 
     def test_on_failure_ignore(self):

@@ -6,8 +6,7 @@ from warnings import warn
 
 from joblib import Parallel, delayed
 import networkx as nx
-import numpy as np
-from numpy.random import SeedSequence, default_rng
+from numpy.random import SeedSequence
 import pandas as pd
 
 from . import _exceptions as exc
@@ -121,6 +120,10 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             warning. Defaults to True.
         :type strict: bool
 
+        :param seed: Random seed to use for reproducibility. By default does
+            not provide a random seed.
+        :type seed: int
+
         :param n_jobs: Number of jobs to run in parallel, defaults to 1
             (single CPU)
         :type n_jobs: int
@@ -139,6 +142,8 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         all_matches = set()
         G = nx.Graph(self.case_control_map)
 
+        # Need to account for parallelization with random seed
+        # https://numpy.org/doc/stable/reference/random/parallel.html
         ss = SeedSequence(seed)
         child_states = ss.spawn(iterations)
 
@@ -150,7 +155,6 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         # Need to sort for reproducibility since calling set is random
         # We call set to remove duplicates so that call is necessary
         cm_list = sorted(list(set(all_matches)))
-
         return CaseMatchCollection(cm_list)
 
     def _get_cm_one_to_one(
@@ -168,6 +172,10 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             an error if a maximum matching is not found. Otherwise will raise a
             warning.
         :type strict: bool
+
+        :param seed: Random seed to use for reproducibility. By default does
+            not provide a random seed.
+        :type seed: int
 
         :returns: Set of matches from cases to controls
         :rtype: qupid.CaseMatchOneToOne
