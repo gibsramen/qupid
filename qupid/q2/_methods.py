@@ -42,11 +42,13 @@ def match_one_to_one(
     case_match_one_to_many: CaseMatchOneToMany,
     iterations: int = 10,
     strict: bool = True,
+    seed: int = None,
     n_jobs: int = 1,
 ) -> pd.DataFrame:
     res = case_match_one_to_many.create_matched_pairs(
         iterations=iterations,
         strict=strict,
-        n_jobs=n_jobs
+        n_jobs=n_jobs,
+        seed=seed
     )
     return res.to_dataframe()
