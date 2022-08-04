@@ -34,6 +34,8 @@ TOL_DESC = (
     "List of numeric columns and the tolerance within which to match. "
     "Use '+-' to separate column name from value (e.g. age_years+-10)."
 )
+FAIL_OPTS = DESC.VALID_ON_FAILURE_OPTS
+
 
 plugin.methods.register_function(
     function=match_one_to_many,
@@ -45,7 +47,7 @@ plugin.methods.register_function(
         "categories": List[Str],
         "case_identifier": Str,
         "tolerances": List[Str],
-        "on_failure": Str % Choices({"raise", "ignore"})
+        "on_failure": Str % Choices(set(FAIL_OPTS))
     },
     parameter_descriptions={
         "sample_metadata": MD_DESC,
@@ -101,7 +103,7 @@ plugin.pipelines.register_function(
         "categories": List[Str],
         "case_identifier": Str,
         "tolerances": List[Str],
-        "on_match_failure": Str % Choices({"raise", "ignore"}),
+        "on_match_failure": Str % Choices(set(FAIL_OPTS)),
         "iterations": Int,
         "strict": Bool,
         "seed": Int,

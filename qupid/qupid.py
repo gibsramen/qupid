@@ -1,11 +1,13 @@
 from functools import partial
 from typing import List, Dict
+from warnings import warn
 
 import pandas as pd
 
 from .casematch import CaseMatchOneToMany
 from . import _exceptions as exc
 from . import _casematch_utils as util
+from ._descriptions import VALID_ON_FAILURE_OPTS
 
 
 def match_by_single(
@@ -26,13 +28,19 @@ def match_by_single(
         1e-08
     :type tolerance: float
 
-    :param on_failure: Whether to 'raise' or 'ignore' sample for which a match
-        cannot be found, defaults to 'raise'
+    :param on_failure: Whether to 'raise' or 'warn' or 'continue' when no
+        matches can be found for a focus sample, defaults to 'raise'
     :type on_failure: str
 
     :returns: Matched control samples
     :rtype: qupid.CaseMatchOneToMany
     """
+    if on_failure.lower() not in VALID_ON_FAILURE_OPTS:
+        raise ValueError(
+            "Invalid argument for 'on_failure', must be one of "
+            f"{VALID_ON_FAILURE_OPTS}"
+        )
+
     if set(focus.index) & set(background.index):
         raise exc.IntersectingSamplesError(focus.index, background.index)
 
@@ -53,6 +61,9 @@ def match_by_single(
         else:
             if on_failure == "raise":
                 raise exc.NoMatchesError(f_idx)
+            elif on_failure == "warn":
+                warn(f"No matches found for {f_idx}")
+                matches[f_idx] = set()
             else:
                 matches[f_idx] = set()
 
@@ -109,8 +120,9 @@ def match_by_multiple(
         for fidx, fhits in observed.items():
             # Reduce the matches with successive categories
             matches[fidx] = matches[fidx] & fhits
-            if not matches[fidx] and on_failure == "raise":
-                raise exc.NoMoreControlsError()
+            if not matches[fidx]:
+                if on_failure == "raise":
+                    raise exc.NoMoreControlsError()
 
     metadata = pd.concat([focus, background])
     return CaseMatchOneToMany(matches, metadata)
@@ -142,8 +154,8 @@ def shuffle(
         Categories not represented are default to 1e-08
     :type tolerance_map: Dict[str, float]
 
-    :param on_failure: Whether to 'raise' or 'ignore' sample for which a match
-        cannot be found, defaults to 'raise'
+    :param on_failure: Whether to 'raise' or 'warn' or 'continue' when no
+        matches can be found for a focus sample, defaults to 'raise'
     :type on_failure: str
 
     :param iterations: Number of iterations to run, defaults to 10
@@ -167,6 +179,12 @@ def shuffle(
         a discrete CaseMatchOneToOne instance
     :rtype: pd.DataFrame
     """
+    if on_failure not in VALID_ON_FAILURE_OPTS:
+        raise ValueError(
+            "Invalid argument for 'on_failure', must be one of "
+            f"{VALID_ON_FAILURE_OPTS}"
+        )
+
     cm_one_to_many = match_by_multiple(focus, background, categories,
                                        tolerance_map, on_failure)
     res = cm_one_to_many.create_matched_pairs(
