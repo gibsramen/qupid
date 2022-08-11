@@ -180,6 +180,30 @@ class TestErrors:
         exp_err_msg = "Invalid input!"
         assert str(exc_info.value) == exp_err_msg
 
+    def test_type_incompat(self):
+        focus = pd.Series([1, 2, 3, 4, 5, "dunsparce"])
+        focus.index = [f"F{x+1}" for x in range(len(focus))]
+        focus.name = "cat"
+
+        background = pd.Series([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, "delibird"])
+        background.index = [f"B{x+1}" for x in range(len(background))]
+        background.name = "cat"
+
+        with pytest.raises(ValueError) as exc_info1:
+            match_by_single(focus, background, 1.0)
+
+        focus_df = focus.to_frame()
+        bg_df = background.to_frame()
+        with pytest.raises(ValueError) as exc_info2:
+            match_by_multiple(focus_df, bg_df, ["cat"], {"cat": 1.0})
+
+        exp_msg = (
+            "A tolerance was provided for values inferred to be discrete."
+            " Please check the type of your data."
+        )
+        for exc_info in [exc_info1, exc_info2]:
+            assert str(exc_info.value) == exp_msg
+
 
 class TestCaseMatch:
     def test_by_single(self):

@@ -50,7 +50,7 @@ def match_by_single(
         matcher = util._match_discrete
 
         if tolerance is not None:
-            warn(
+            raise ValueError(
                 "A tolerance was provided for values inferred to be"
                 " discrete. Please check the type of your data."
             )
