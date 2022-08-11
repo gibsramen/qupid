@@ -52,7 +52,7 @@ def _match_continuous(
     """Find matches to a given float value within tolerance.
 
     :param focus_value: Value to be matched
-    :type focus_value: str, bool
+    :type focus_value: float, bool
 
     :param background_values: Values in which to search for matches
     :type background_values: Sequence
