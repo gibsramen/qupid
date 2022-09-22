@@ -12,7 +12,7 @@ def shuffle(
     n_jobs=1,
 ):
     match_one_to_many = ctx.get_action("qupid", "match_one_to_many")
-    match_one_to_one = ctx.get_action("qupid", "match_one_to_one")
+    create_matched_pairs = ctx.get_action("qupid", "create_matched_pairs")
 
     results = []
     cm_one_to_many, = match_one_to_many(
@@ -25,7 +25,7 @@ def shuffle(
     )
     results.append(cm_one_to_many)
 
-    cm_collection, = match_one_to_one(
+    cm_collection, = create_matched_pairs(
         case_match_one_to_many=cm_one_to_many,
         iterations=iterations,
         strict=strict,

@@ -38,7 +38,7 @@ def match_one_to_many(
     return cm_one_to_many
 
 
-def match_one_to_one(
+def create_matched_pairs(
     case_match_one_to_many: CaseMatchOneToMany,
     iterations: int = 10,
     strict: bool = True,

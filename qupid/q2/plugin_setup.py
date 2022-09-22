@@ -8,7 +8,7 @@ from qupid import __version__
 from qupid import _descriptions as DESC
 from ._format import CaseMatchDirFmt, CaseMatchCollectionDirFmt
 from ._type import CaseMatch, OneToMany, OneToOne, CaseMatchCollection
-from ._methods import match_one_to_many, match_one_to_one
+from ._methods import match_one_to_many, create_matched_pairs
 from ._visualizers import (assess_matches_multivariate,
                            assess_matches_univariate)
 from ._pipelines import shuffle
@@ -67,7 +67,7 @@ plugin.methods.register_function(
 )
 
 plugin.methods.register_function(
-    function=match_one_to_one,
+    function=create_matched_pairs,
     inputs={"case_match_one_to_many": CaseMatch[OneToMany]},
     input_descriptions={"case_match_one_to_many": "Full mapping"},
     parameters={

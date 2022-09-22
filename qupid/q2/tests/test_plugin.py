@@ -54,7 +54,7 @@ def test_match_one_to_many(metadata):
     )
 
 
-def test_match_one_to_one(metadata):
+def test_create_matched_pairs(metadata):
     cm_one_to_many, = qupid.methods.match_one_to_many(
         sample_metadata=metadata,
         case_control_column="asd",
@@ -66,7 +66,7 @@ def test_match_one_to_one(metadata):
         tolerances=["age_years+-10"]
     )
 
-    qupid.methods.match_one_to_one(
+    qupid.methods.create_matched_pairs(
         case_match_one_to_many=cm_one_to_many,
         iterations=100,
     )
