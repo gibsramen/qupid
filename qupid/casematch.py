@@ -339,17 +339,45 @@ class CaseMatchCollection:
                 "evaluating match scores."
             )
 
-        def single_match_score(cm_one_to_one):
-            score_df = cm_one_to_one.evaluate_match_score(
-                self.metadata, categories
-            )
-            return score_df
+        cat_types = map(
+            lambda x: is_numeric_dtype(x[1]),
+            self.metadata[categories].items()
+        )
+        if not all(cat_types):
+            raise ValueError("Not all categories are numeric!")
 
-        all_match_score_dfs = list(self.apply(single_match_score))
-        for i, df in enumerate(all_match_score_dfs):
-            df["match_num"] = i
+        # Keep track of case-ctrl scores so we don't do redundant work
+        case_diff_dict = dict()
 
-        return pd.concat(all_match_score_dfs)
+        scores = []
+        for i, cm in enumerate(self.case_matches):
+            for case_id, ctrl_id in cm.case_control_map.items():
+                ctrl_id = list(ctrl_id)[0]
+                match_tuple = (case_id, ctrl_id)
+
+                # Check if we've already calculated differences
+                if match_tuple in case_diff_dict:
+                    score = case_diff_dict[match_tuple].copy()
+                else:
+                    case_md = self.metadata.loc[case_id, categories]
+                    ctrl_md = self.metadata.loc[ctrl_id, categories]
+                    diff = pd.Series(case_md.values - ctrl_md.values,
+                                     index=categories)
+                    case_diff_dict[match_tuple] = diff
+
+                    score = diff.copy()
+
+                score["match_num"] = i
+                score.name = match_tuple
+                scores.append(score)
+
+        col_rename_dict = {cat: f"{cat}_diff" for cat in categories}
+        col_rename_dict["level_0"] = "case_id"
+        col_rename_dict["level_1"] = "ctrl_id"
+
+        score_df = pd.concat(scores, axis=1).T.reset_index()
+        score_df = score_df.rename(columns=col_rename_dict)
+        return score_df
 
     @classmethod
     def load(cls, path) -> "CaseMatchCollection":

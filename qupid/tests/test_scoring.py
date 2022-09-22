@@ -50,14 +50,15 @@ def test_cm_one_to_one_score(scoring_metadata, scoring_case_match_mult):
 
 
 def test_cm_collection_score(scoring_metadata, scoring_case_match_mult):
-    collection = scoring_case_match_mult.create_matched_pairs(iterations=100)
-    collection_df = collection.to_dataframe()
+    n = 50
+    collection = scoring_case_match_mult.create_matched_pairs(iterations=n)
     score_df = collection.evaluate_match_scores(["age_years", "rand"])
 
-    exp_cols = ["ctrl_id", "age_years_diff", "rand_diff", "match_num"]
+    exp_cols = ["case_id", "ctrl_id", "age_years_diff", "rand_diff",
+                "match_num"]
     assert (score_df.columns == exp_cols).all()
 
-    exp_match_nums = np.arange(100).astype(int)
+    exp_match_nums = np.arange(n).astype(int)
     match_num_vc = score_df["match_num"].value_counts()
     assert (match_num_vc == 45).all()
 
@@ -69,5 +70,19 @@ def test_cm_collection_score(scoring_metadata, scoring_case_match_mult):
     cases = single_match_cm.cases
     ctrls = single_match_cm.controls
 
-    assert set(single_match_score_df.index) == set(cases)
-    assert set(single_match_score_df["ctrl_id"]) == set(ctrls)
+    assert set(single_match_score_df["case_id"]) == cases
+    assert set(single_match_score_df["ctrl_id"]) == ctrls
+
+    for case_id, ctrl_id in single_match_cm.case_control_map.items():
+        ctrl_id = list(ctrl_id)[0]
+        for col in ["age_years", "rand"]:
+            diff_col = f"{col}_diff"
+            case_val = scoring_metadata.loc[case_id, col]
+            ctrl_val = scoring_metadata.loc[ctrl_id, col]
+            exp_val = case_val - ctrl_val
+
+            calc_val = single_match_score_df[
+                (single_match_score_df["case_id"] == case_id) &
+                (single_match_score_df["ctrl_id"] == ctrl_id)
+            ][diff_col].item()
+            assert exp_val == calc_val
