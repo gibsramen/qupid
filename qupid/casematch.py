@@ -8,6 +8,7 @@ from joblib import Parallel, delayed
 import networkx as nx
 from numpy.random import SeedSequence
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 
 from . import _exceptions as exc
 from .matching import hopcroft_karp_matching
@@ -213,6 +214,49 @@ class CaseMatchOneToOne(_BaseCaseMatch):
         cases, controls = zip(*match_tuples)
         return pd.Series(controls, index=cases)
 
+    def evaluate_match_score(self, metadata: pd.DataFrame,
+                             categories: List[str]) -> pd.DataFrame:
+        """Evaluates how close matches are by numeric categories.
+
+        NOTE: This approach does a lot of redundant computation if applied
+              to a full CaseMatchCollection. The same case-ctrl match score
+              will be calculated each time. In the future we should maybe
+              move this to only calculate each difference once.
+
+        :param metadata: Sample metadata to compare cases and controls
+        :type metadata: pd.DataFrame
+
+        :param categories: Numeric category names in metadata
+        :type categories: List[str]
+
+        :returns: DataFrame of case-control matches and scores
+        :rtype: pd.DataFrame
+        """
+        cat_types = map(
+            lambda x: is_numeric_dtype(x[1]),
+            metadata[categories].items()
+        )
+        if not all(cat_types):
+            raise ValueError("Not all categories are numeric!")
+
+        scores = []
+        for case_id, ctrl_id in self.case_control_map.items():
+            ctrl_id = list(ctrl_id)[0]
+            case_md = metadata.loc[case_id, categories]
+            ctrl_md = metadata.loc[ctrl_id, categories]
+            diff = pd.Series(case_md.values - ctrl_md.values,
+                             name=case_id, index=categories)
+            diff["ctrl_id"] = ctrl_id
+            scores.append(diff)
+
+        score_df = pd.concat(scores, axis=1).T
+        score_df = score_df[["ctrl_id"] + categories]
+        score_df = score_df.rename(
+            columns={cat: f"{cat}_diff" for cat in categories}
+        )
+        score_df.index.name = "case_id"
+        return score_df
+
     def __hash__(self) -> int:
         return hash(frozenset(
             (k, list(v)[0]) for k, v in self.case_control_map.items()
@@ -287,19 +331,39 @@ class CaseMatchCollection:
     def assign_metadata(self, metadata: pd.DataFrame) -> None:
         self.metadata = metadata
 
+    def evaluate_match_scores(self, categories: List[str]):
+        if self.metadata is None:
+            raise ValueError(
+                "CaseMatchCollection does not contain sample metadata! Please "
+                "use the assign_metadata method to add metadata before "
+                "evaluating match scores."
+            )
+
+        def single_match_score(cm_one_to_one):
+            score_df = cm_one_to_one.evaluate_match_score(
+                self.metadata, categories
+            )
+            return score_df
+
+        all_match_score_dfs = list(self.apply(single_match_score))
+        for i, df in enumerate(all_match_score_dfs):
+            df["match_num"] = i
+
+        return pd.concat(all_match_score_dfs)
+
     @classmethod
     def load(cls, path) -> "CaseMatchCollection":
         """Load from TSV."""
         df = pd.read_table(path, sep="\t", index_col=0)
         return cls.from_dataframe(df)
 
-    def apply(self, func: Callable) -> Iterator:
+    def apply(self, func: Callable, *args, **kwargs) -> Iterator:
         """Apply a function to each CaseMatchOneToOne in a collection.
 
         :param func: Function to call on each CaseMatchOneToOne
         :type func: Callable
         """
-        return (func(cm) for cm in self.case_matches)
+        return (func(cm, *args, **kwargs) for cm in self.case_matches)
 
     def save(self, path) -> None:
         """Save as TSV."""
