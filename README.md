@@ -115,7 +115,7 @@ Because of this, there are many possible sets of valid matchings of each case to
 We can use Qupid to generate many such cases.
 
 ```python
-results = cm.create_matched_pairs(iterations=100)
+results = cm.create_matched_pairs(iterations=100, seed=42)
 ```
 
 This creates a `CaseMatchCollection` data structure that contains 100 `CaseMatchOneToOne` instances.
@@ -138,11 +138,11 @@ results_df.head()
 ```
                                 0                 1   ...                98                99
 case_id                                               ...
-S10317.000026181  S10317.000033804  S10317.000069086  ...  S10317.000108605  S10317.000076381
-S10317.000071491  S10317.000155409  S10317.000103912  ...  S10317.000099277  S10317.000036401
-S10317.000029293  S10317.000069676  S10317.X00175749  ...  S10317.000069299  S10317.000066846
-S10317.000067638  S10317.X00179103  S10317.000052409  ...  S10317.000067511  S10317.000067601
-S10317.000067637  S10317.000067747  S10317.000098161  ...  S10317.000017116  S10317.000067997
+S10317.000014115  S10317.000022626  S10317.000026613  ...  S10317.X00179815  S10317.X00185470
+S10317.000015573  S10317.000067569  S10317.000102715  ...  S10317.X00179598  S10317.000053311
+S10317.000020752  S10317.000072372  S10317.000103626  ...  S10317.000031341  S10317.000022109
+S10317.000021552  S10317.000084542  S10317.000031594  ...  S10317.000108624  S10317.000033677
+S10317.000021558  S10317.000113466  S10317.000109876  ...  S10317.000036071  S10317.000065484
 
 [5 rows x 100 columns]
 ```
@@ -159,7 +159,7 @@ We will generate random data for this tutorial where there exists a small differ
 ```python
 import numpy as np
 
-rng = np.random.default_rng()
+rng = np.random.default_rng(42)
 asd_mean = 4
 ctrl_mean = 3.75
 
@@ -185,28 +185,29 @@ test_results = bulk_univariate_test(
     values=sample_values,
     test="t"
 )
+test_results.head()
 ```
 
 This returns a DataFrame of test results sorted by descending test statistic.
 
 ```
    method_name test_statistic_name  test_statistic   p-value  sample_size  number_of_groups
-15      t-test                   t        3.900874  0.000187           90                 2
-61      t-test                   t        3.770914  0.000294           90                 2
-50      t-test                   t        3.536803  0.000649           90                 2
-32      t-test                   t        3.395298  0.001030           90                 2
-68      t-test                   t        3.310822  0.001350           90                 2
+58      t-test                   t        3.950109  0.000157           90                 2
+4       t-test                   t        3.667203  0.000419           90                 2
+11      t-test                   t        3.228335  0.001750           90                 2
+57      t-test                   t        3.217517  0.001810           90                 2
+17      t-test                   t        3.086428  0.002709           90                 2
 ..         ...                 ...             ...       ...          ...               ...
-13      t-test                   t        0.645694  0.520158           90                 2
-49      t-test                   t        0.555063  0.580260           90                 2
-92      t-test                   t        0.409252  0.683349           90                 2
-51      t-test                   t        0.110707  0.912101           90                 2
-34      t-test                   t        0.048571  0.961371           90                 2
+19      t-test                   t        0.294450  0.769107           90                 2
+47      t-test                   t        0.227653  0.820444           90                 2
+52      t-test                   t        0.176479  0.860323           90                 2
+2       t-test                   t       -0.303799  0.761998           90                 2
+46      t-test                   t       -0.752030  0.454040           90                 2
 
 [100 rows x 6 columns]
 ```
 
-From this table, we can see that iteration 15 best separates cases from controls based on our random data.
+From this table, we can see that iteration 58 best separates cases from controls based on our random data.
 Conversely, iteration 34 showed essentially no difference between cases and controls.
 This shows that it is important to create multiple matchings as some of them are better than others.
 We can plot the distribution of p-values to get a sense of the overall distribution.
@@ -221,6 +222,29 @@ sns.histplot(test_results["p-value"])
 ![p-value Histogram](https://raw.githubusercontent.com/gibsramen/qupid/main/imgs/asd_match_pvals.png)
 
 We see that most of the p-values are near zero which makes sense because we simulated our data with a difference between ASD and non-ASD samples.
+
+### Evaluating match scores
+
+When providing continuous matching criteria, you may be interested in the closeness of cases and matched controls based on these differences.
+Currently, Qupid treats all matches within a tolerance as equal.
+However, you can evaluate the matching score of each set of matches for all your continuous categories.
+
+```python
+results_score_df = results.evaluate_match_scores(["age_years"])
+results_score_df.head()
+```
+
+```
+            case_id           ctrl_id age_years_diff match_num
+0  S10317.000014115  S10317.000022626            0.0         0
+1  S10317.000015573  S10317.000067569           -2.0         0
+2  S10317.000020752  S10317.000072372           -9.0         0
+3  S10317.000021552  S10317.000084542           -4.0         0
+4  S10317.000021558  S10317.000113466            1.0         0
+```
+
+We see that for each case-ctrl match, the difference in `age_years` (case minus control).
+Each row also includes the match iteration in which it appears for potential grouping analyses.
 
 ### Saving and loading qupid results
 
