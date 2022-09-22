@@ -15,22 +15,15 @@ from . import _casematch_utils as util
 
 
 class _BaseCaseMatch(ABC):
-    __slots__ = "case_control_map", "metadata"
-
-    def __init__(self, case_control_map: Dict[str, set],
-                 metadata: Union[pd.Series, pd.DataFrame] = None):
+    def __init__(self, case_control_map: Dict[str, set]):
         """Base class storing case-control data & metadata.
 
         :param case_control_map: Dict of cases to sets of controls
         :type case_control_map: dict(str -> set)
-
-        :param metadata: Metadata associated with cases & controls (optional)
-        :type metadata: pd.Series or pd.DataFrame
         """
         if not self._validate_input(case_control_map):
             raise ValueError("Invalid input!")
         self.case_control_map = case_control_map
-        self.metadata = metadata
 
     @property
     def cases(self) -> Set[str]:
@@ -90,7 +83,8 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         :param metadata: Metadata associated with cases & controls (optional)
         :type metadata: pd.Series or pd.DataFrame
         """
-        super().__init__(case_control_map, metadata)
+        super().__init__(case_control_map)
+        self.metadata = metadata
 
     @classmethod
     def load(cls, path: str) -> "CaseMatchOneToMany":
@@ -105,7 +99,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         seed: int = None,
         n_jobs: int = 1,
         parallel_args: dict = None
-    ) -> List["CaseMatchOneToOne"]:
+    ) -> "CaseMatchCollection":
         """Create multiple matched pairs of cases to controls.
 
         NOTE: Can probably improve algorithm with "best" match from tolerance
@@ -155,7 +149,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         # Need to sort for reproducibility since calling set is random
         # We call set to remove duplicates so that call is necessary
         cm_list = sorted(list(set(all_matches)))
-        return CaseMatchCollection(cm_list)
+        return CaseMatchCollection(cm_list, self.metadata)
 
     def _get_cm_one_to_one(
         self,
@@ -188,23 +182,19 @@ class CaseMatchOneToMany(_BaseCaseMatch):
                 raise exc.NoMoreControlsError(missing)
             else:
                 warn("Some cases were not matched to a control.", UserWarning)
-        return CaseMatchOneToOne(M, self.metadata)
+        return CaseMatchOneToOne(M)
 
 
 class CaseMatchOneToOne(_BaseCaseMatch):
-    def __init__(self, case_control_map: Dict[str, set],
-                 metadata: Union[pd.Series, pd.DataFrame] = None):
+    def __init__(self, case_control_map: Dict[str, set]):
         """Case match object for mapping one case to one control.
 
         :param case_control_map: Dict of cases to sets of controls
         :type case_control_map: dict(str -> set)
-
-        :param metadata: Metadata associated with cases & controls (optional)
-        :type metadata: pd.Series or pd.DataFrame
         """
         if not util._check_one_to_one(case_control_map):
             raise exc.NotOneToOneError(case_control_map)
-        super().__init__(case_control_map, metadata)
+        super().__init__(case_control_map)
 
     @classmethod
     def load(cls, path: str) -> "CaseMatchOneToOne":
@@ -256,11 +246,15 @@ class CaseMatchOneToOne(_BaseCaseMatch):
 
 
 class CaseMatchCollection:
-    def __init__(self, case_matches: List[CaseMatchOneToOne]):
+    def __init__(self, case_matches: List[CaseMatchOneToOne],
+                 metadata: pd.DataFrame = None):
         """Container for multiple matching sets.
 
         :param case_matches: List of match sets
         :type case_matches: List[CaseMatchOneToOne]
+
+        :param metadata: Metadata associated with cases & controls (optional)
+        :type metadata: pd.Series or pd.DataFrame
         """
         def is_valid_cm(x):
             return isinstance(x, CaseMatchOneToOne)
@@ -268,6 +262,7 @@ class CaseMatchCollection:
         if not all(map(is_valid_cm, case_matches)):
             raise ValueError("Entries must all be of type CaseMatchOneToOne!")
         self.case_matches = case_matches
+        self.metadata = metadata
 
     def to_dataframe(self) -> pd.DataFrame:
         """Convert to DataFrame.
@@ -288,6 +283,9 @@ class CaseMatchCollection:
             mapping = {k: {v} for k, v in collection[col].to_dict().items()}
             casematches.append(CaseMatchOneToOne(mapping))
         return cls(casematches)
+
+    def assign_metadata(self, metadata: pd.DataFrame) -> None:
+        self.metadata = metadata
 
     @classmethod
     def load(cls, path) -> "CaseMatchCollection":
