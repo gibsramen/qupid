@@ -10,4 +10,5 @@ FAIL = ("Whether to 'raise' an error, 'warn', or 'continue' (silently) when "
 STRICT = ("Whether to perform strict matching such that all cases must be "
           "matched to a control.")
 JOBS = "Number of CPUs to use for parallelization."
+SEED = "Integer to use as random seed."
 OUTPUT = "Path to save matches."

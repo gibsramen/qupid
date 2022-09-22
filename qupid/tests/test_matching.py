@@ -31,7 +31,7 @@ def simple_graph():
 def test_hk(simple_graph):
     all_matches = set()
     for i in range(20):
-        M = hopcroft_karp_matching(simple_graph)
+        M = hopcroft_karp_matching(simple_graph, seed=None)
         match = frozenset(tuple((x, M[x]) for x in M))
         all_matches.add(match)
 

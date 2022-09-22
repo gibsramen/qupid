@@ -6,6 +6,7 @@ from warnings import warn
 
 from joblib import Parallel, delayed
 import networkx as nx
+from numpy.random import SeedSequence
 import pandas as pd
 
 from . import _exceptions as exc
@@ -101,6 +102,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         self,
         iterations: int = 10,
         strict: bool = True,
+        seed: int = None,
         n_jobs: int = 1,
         parallel_args: dict = None
     ) -> List["CaseMatchOneToOne"]:
@@ -117,6 +119,10 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             an error if a maximum matching is not found. Otherwise will raise a
             warning. Defaults to True.
         :type strict: bool
+
+        :param seed: Random seed to use for reproducibility. By default does
+            not provide a random seed.
+        :type seed: int
 
         :param n_jobs: Number of jobs to run in parallel, defaults to 1
             (single CPU)
@@ -136,44 +142,27 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         all_matches = set()
         G = nx.Graph(self.case_control_map)
 
+        # Need to account for parallelization with random seed
+        # https://numpy.org/doc/stable/reference/random/parallel.html
+        ss = SeedSequence(seed)
+        child_states = ss.spawn(iterations)
+
         all_matches = Parallel(n_jobs=n_jobs, **parallel_args)(
-            delayed(self._get_cm_one_to_one)(G, strict)
-            for i in range(iterations)
+            delayed(self._get_cm_one_to_one)(G, strict, child_state)
+            for child_state in child_states
         )
 
-        return CaseMatchCollection(list(set(all_matches)))
+        # Need to sort for reproducibility since calling set is random
+        # We call set to remove duplicates so that call is necessary
+        cm_list = sorted(list(set(all_matches)))
+        return CaseMatchCollection(cm_list)
 
-    @staticmethod
-    def _create_matched_pairs_single(G: nx.Graph, cases: set = None,
-                                     strict: bool = True) -> dict:
-        """Create a single matched pair of cases to controls.
-
-        :param G: Bipartite graph on which to perform matching
-        :type G: nx.Graph
-
-        :param cases: Cases in graph
-        :type cases: set
-
-        :param strict: Whether to perform strict matching. If True, will throw
-            an error if a maximum matching is not found. Otherwise will raise a
-            warning. Defaults to True.
-        :type strict: bool
-
-        :returns: Mapping of case to single control (set)
-        :rtype: dict
-        """
-        M = hopcroft_karp_matching(G, top_nodes=cases)
-        M = {k: {v} for k, v in M.items()}
-        if len(M) != len(cases):
-            missing = set(cases).difference(M.keys())
-            if strict:
-                raise exc.NoMoreControlsError(missing)
-            else:
-                warn("Some cases were not matched to a control.", UserWarning)
-        return M
-
-    def _get_cm_one_to_one(self, G: nx.Graph,
-                           strict: bool) -> "CaseMatchOneToOne":
+    def _get_cm_one_to_one(
+        self,
+        G: nx.Graph,
+        strict: bool,
+        seed: int
+    ) -> "CaseMatchOneToOne":
         """Get a single matching from a graph as CaseMatchOneToOne.
 
         :param G: Bipartite graph on which to perform matching
@@ -184,11 +173,21 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             warning.
         :type strict: bool
 
+        :param seed: Random seed to use for reproducibility. By default does
+            not provide a random seed.
+        :type seed: int
+
         :returns: Set of matches from cases to controls
         :rtype: qupid.CaseMatchOneToOne
         """
-        M = self._create_matched_pairs_single(G, cases=self.cases,
-                                              strict=strict)
+        M = hopcroft_karp_matching(G, top_nodes=self.cases, seed=seed)
+        M = {k: {v} for k, v in M.items()}
+        if len(M) != len(self.cases):
+            missing = set(self.cases).difference(M.keys())
+            if strict:
+                raise exc.NoMoreControlsError(missing)
+            else:
+                warn("Some cases were not matched to a control.", UserWarning)
         return CaseMatchOneToOne(M, self.metadata)
 
 
@@ -228,6 +227,32 @@ class CaseMatchOneToOne(_BaseCaseMatch):
         return hash(frozenset(
             (k, list(v)[0]) for k, v in self.case_control_map.items()
         ))
+
+    def __lt__(self, other) -> bool:
+        """Used for sorting."""
+        this_ccm = self.case_control_map
+        other_ccm = other.case_control_map
+        for (k1, v1), (k2, v2) in zip(this_ccm.items(), other_ccm.items()):
+            v1 = list(v1)[0]
+            v2 = list(v2)[0]
+            if v1 < v2:
+                return True
+            if v1 > v2:
+                return False
+        return False  # Instances are equal
+
+    def __gt__(self, other) -> bool:
+        """Used for sorting."""
+        this_ccm = self.case_control_map
+        other_ccm = other.case_control_map
+        for (k1, v1), (k2, v2) in zip(this_ccm.items(), other_ccm.items()):
+            v1 = list(v1)[0]
+            v2 = list(v2)[0]
+            if v1 > v2:
+                return True
+            if v1 < v2:
+                return False
+        return False  # Instances are equal
 
 
 class CaseMatchCollection:

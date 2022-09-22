@@ -73,11 +73,13 @@ plugin.methods.register_function(
     parameters={
         "iterations": Int,
         "strict": Bool,
+        "seed": Int,
         "n_jobs": Int
     },
     parameter_descriptions={
         "iterations": DESC.ITERATIONS,
         "strict": DESC.STRICT,
+        "seed": DESC.SEED,
         "n_jobs": DESC.JOBS
     },
     outputs=[("case_match_collection", CaseMatchCollection)],
@@ -104,6 +106,7 @@ plugin.pipelines.register_function(
         "on_match_failure": Str % Choices(set(FAIL_OPTS)),
         "iterations": Int,
         "strict": Bool,
+        "seed": Int,
         "n_jobs": Int
     },
     parameter_descriptions={
@@ -115,6 +118,7 @@ plugin.pipelines.register_function(
         "tolerances": TOL_DESC,
         "iterations": DESC.ITERATIONS,
         "strict": DESC.STRICT,
+        "seed": DESC.SEED,
         "n_jobs": DESC.JOBS
     },
     outputs=[
