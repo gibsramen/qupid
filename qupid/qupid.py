@@ -136,6 +136,7 @@ def shuffle(
     tolerance_map: Dict[str, float] = None,
     on_failure: str = "raise",
     strict: bool = True,
+    seed: int = None,
     n_jobs: int = 1,
     parallel_args: dict = None
 ) -> pd.DataFrame:
@@ -166,6 +167,10 @@ def shuffle(
         warning. Defaults to True.
     :type strict: bool
 
+    :param seed: Random seed to use for reproducibility. By default does
+        not provide a random seed.
+    :type seed: int
+
     :param n_jobs: Number of jobs to run in parallel, defaults to 1
         (single CPU)
     :type n_jobs: int
@@ -190,6 +195,7 @@ def shuffle(
     res = cm_one_to_many.create_matched_pairs(
         iterations=iterations,
         strict=strict,
+        seed=seed,
         n_jobs=n_jobs,
         parallel_args=parallel_args
     ).to_dataframe()

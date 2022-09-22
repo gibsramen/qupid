@@ -29,6 +29,8 @@ def qupid():
               help=DESC.FAIL, show_default=True)
 @click.option("--strict/--no-strict", default=True, help=DESC.STRICT,
               show_default=True)
+@click.option("-rs", "--random-seed", type=int, help=DESC.SEED,
+              show_default=True)
 @click.option("-j", "--jobs", type=int, help=DESC.JOBS,
               show_default=True)
 @click.option("-o", "--output", type=click.Path(), required=True,
@@ -41,6 +43,7 @@ def shuffle(
     numeric_cat,
     on_failure,
     strict,
+    random_seed,
     jobs,
     output
 ):
@@ -62,6 +65,7 @@ def shuffle(
         iterations=iterations,
         on_failure=on_failure,
         strict=strict,
+        seed=random_seed,
         n_jobs=jobs
     )
     print(f"Created {res.shape[1]}/{iterations} match sets!")
