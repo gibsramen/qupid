@@ -147,7 +147,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         ss = SeedSequence(seed)
         child_states = ss.spawn(iterations)
 
-        all_matches = Parallel(n_jobs=n_jobs, **parallel_args)(
+        all_matches = Parallel(n_jobs=n_jobs, **parallel_args, prefer="threads")(
             delayed(self._get_cm_one_to_one)(G, strict, child_state)
             for child_state in child_states
         )
