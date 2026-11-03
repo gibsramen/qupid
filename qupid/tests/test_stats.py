@@ -188,8 +188,7 @@ def test_correct_in_permanova(example_collection, example_dm):
     assert "q_value" in res_q.columns
 
 
-# Vectorized PERMANOVA
-def test_fast_permanova_fields():
+def test_single_permanova_fields():
     exp_fields = {
         "method name",
         "test statistic name",
@@ -210,26 +209,3 @@ def test_fast_permanova_fields():
     dm = DistanceMatrix(dm_arr, ids=all_ids)
     result = stats._single_permanova(cm, dm, permutations=99)
     assert set(result.index) == exp_fields
-
-
-def test_fast_permanova_pseudo_f_matches_skbio():
-    from skbio.stats.distance import permanova as skbio_permanova
-
-    rng = np.random.default_rng(42)
-    n = 10  # 5 cases + 5 controls
-    ids = [f"s{i}" for i in range(n)]
-    raw = rng.random((n, n))
-    dm_arr = np.triu(raw, 1) + np.triu(raw, 1).T
-    dm = DistanceMatrix(dm_arr, ids=ids)
-
-    is_case = np.array([True] * 5 + [False] * 5)
-    grouping = pd.Series(["case"] * 5 + ["control"] * 5, index=ids)
-
-    # pseudo-F is deterministic — both implementations must agree exactly
-    fast_f, _ = stats._fast_permanova(dm_arr, is_case, permutations=0, rng=rng)
-    skbio_res = skbio_permanova(dm, grouping, permutations=0)
-    assert abs(fast_f - skbio_res["test statistic"]) < 1e-10
-
-    # p-values are stochastic (no shared seed with skbio) — just check range
-    _, fast_p = stats._fast_permanova(dm_arr, is_case, permutations=99, rng=rng)
-    assert 0.0 <= fast_p <= 1.0
