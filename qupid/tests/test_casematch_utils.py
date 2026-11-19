@@ -49,3 +49,9 @@ def test_infer_types():
 
     exp_err_msg = "Focus and background do not have the same dtype"
     assert exp_err_msg == str(exc_info.value)
+
+
+def test_infer_mixed_object_is_discrete():
+    mixed = pd.Series([1, "two", 3, "four"])
+    result = util._infer_column_type(mixed, mixed)
+    assert result == "discrete"
