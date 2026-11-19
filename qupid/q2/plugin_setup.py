@@ -1,16 +1,29 @@
 import importlib
 
-from qiime2.plugin import (Plugin, List, Str, Choices, Metadata, Bool, Int,
-                           MetadataColumn, Numeric)
+from qiime2.plugin import (
+    Plugin,
+    List,
+    Str,
+    Choices,
+    Metadata,
+    Bool,
+    Int,
+    MetadataColumn,
+    Numeric,
+)
 from q2_types.distance_matrix import DistanceMatrix
 
 from qupid import __version__
 from qupid import _descriptions as DESC
+from qupid.stats import _TEST_REGISTRY
 from ._format import CaseMatchDirFmt, CaseMatchCollectionDirFmt
 from ._type import CaseMatch, OneToMany, OneToOne, CaseMatchCollection
 from ._methods import match_one_to_many, match_one_to_one
-from ._visualizers import (assess_matches_multivariate,
-                           assess_matches_univariate)
+from ._visualizers import (
+    assess_matches_multivariate,
+    assess_matches_univariate,
+    assess_covariate_balance,
+)
 from ._pipelines import shuffle
 
 
@@ -20,10 +33,9 @@ plugin = Plugin(
     website="https://github.com/gibsramen/qupid",
     short_description="Plugin for case-control matching",
     description=(
-        "Match cases to controls based on metadata criteria for "
-        "microbiome data."
+        "Match cases to controls based on metadata criteria for " "microbiome data."
     ),
-    package="qupid"
+    package="qupid",
 )
 
 MD_DESC = "Sample metadata for matching."
@@ -47,7 +59,7 @@ plugin.methods.register_function(
         "categories": List[Str],
         "case_identifier": Str,
         "tolerances": List[Str],
-        "on_failure": Str % Choices(set(FAIL_OPTS))
+        "on_failure": Str % Choices(set(FAIL_OPTS)),
     },
     parameter_descriptions={
         "sample_metadata": MD_DESC,
@@ -55,7 +67,7 @@ plugin.methods.register_function(
         "categories": CATS_DESC,
         "case_identifier": CASE_ID_DESC,
         "tolerances": TOL_DESC,
-        "on_failure": DESC.FAIL
+        "on_failure": DESC.FAIL,
     },
     outputs=[("case_match_one_to_many", CaseMatch[OneToMany])],
     name="Match each case to all possible controls.",
@@ -63,24 +75,19 @@ plugin.methods.register_function(
         "Creates a mapping of each case to all possible controls given "
         "the provided matching criteria. A control can be matched to multiple "
         "cases."
-    )
+    ),
 )
 
 plugin.methods.register_function(
     function=match_one_to_one,
     inputs={"case_match_one_to_many": CaseMatch[OneToMany]},
     input_descriptions={"case_match_one_to_many": "Full mapping"},
-    parameters={
-        "iterations": Int,
-        "strict": Bool,
-        "seed": Int,
-        "n_jobs": Int
-    },
+    parameters={"iterations": Int, "strict": Bool, "seed": Int, "n_jobs": Int},
     parameter_descriptions={
         "iterations": DESC.ITERATIONS,
         "strict": DESC.STRICT,
         "seed": DESC.SEED,
-        "n_jobs": DESC.JOBS
+        "n_jobs": DESC.JOBS,
     },
     outputs=[("case_match_collection", CaseMatchCollection)],
     name="Match each case to one control for multiple iterations.",
@@ -90,7 +97,7 @@ plugin.methods.register_function(
         "Each generated matching is a unique mapping of cases to controls. "
         "Note that depending on the structure of the possible matches, "
         "there may be fewer valid matchings than iterations."
-    )
+    ),
 )
 
 plugin.pipelines.register_function(
@@ -107,7 +114,7 @@ plugin.pipelines.register_function(
         "iterations": Int,
         "strict": Bool,
         "seed": Int,
-        "n_jobs": Int
+        "n_jobs": Int,
     },
     parameter_descriptions={
         "sample_metadata": MD_DESC,
@@ -119,45 +126,45 @@ plugin.pipelines.register_function(
         "iterations": DESC.ITERATIONS,
         "strict": DESC.STRICT,
         "seed": DESC.SEED,
-        "n_jobs": DESC.JOBS
+        "n_jobs": DESC.JOBS,
     },
     outputs=[
         ("case_match_one_to_many", CaseMatch[OneToMany]),
-        ("case_match_collection", CaseMatchCollection)
+        ("case_match_collection", CaseMatchCollection),
     ],
     name=(
-        "Create multiple one-to-one case-control matches given matching "
-        "criteria."
+        "Create multiple one-to-one case-control matches given matching " "criteria."
     ),
     description=(
         "Pipeline to get all valid controls per case and perform multiple "
         "iterations of matching each case to a single control."
-    )
+    ),
 )
+
+_TEST_ALIASES = Str % Choices(set(_TEST_REGISTRY.keys()))
 
 plugin.visualizers.register_function(
     function=assess_matches_multivariate,
     inputs={
         "case_match_collection": CaseMatchCollection,
-        "distance_matrix": DistanceMatrix
+        "distance_matrix": DistanceMatrix,
     },
     input_descriptions={
         "case_match_collection": "Iterations of one-to-one matchings.",
-        "distance_matrix": "Distance matrix with all cases and controls."
+        "distance_matrix": "Distance matrix with all cases and controls.",
     },
-    parameters={
-        "permutations": Int,
-        "n_jobs": Int
-    },
+    parameters={"permutations": Int, "n_jobs": Int, "correct": Bool},
     parameter_descriptions={
         "permutations": "Number of PERMANOVA permutations.",
-        "n_jobs": DESC.JOBS
+        "n_jobs": DESC.JOBS,
+        "correct": DESC.CORRECT,
     },
     name="Run PERMANOVA on all one-to-one matches.",
     description=(
         "Plot the distribution of p-values from PERMANOVA on all one-to-one "
-        "matches (case vs. control)."
-    )
+        "matches (case vs. control).  Pass correct=True to append a "
+        "Benjamini-Hochberg q_value column to the downloadable TSV."
+    ),
 )
 
 plugin.visualizers.register_function(
@@ -170,29 +177,62 @@ plugin.visualizers.register_function(
     },
     parameters={
         "data": MetadataColumn[Numeric],
-        "n_jobs": Int
+        "test": _TEST_ALIASES,
+        "n_jobs": Int,
+        "correct": Bool,
     },
     parameter_descriptions={
         "data": "Numeric data to assess matches.",
-        "n_jobs": DESC.JOBS
+        "test": DESC.TEST,
+        "n_jobs": DESC.JOBS,
+        "correct": DESC.CORRECT,
     },
-    name="Run t-test on all one-to-one matches.",
+    name="Run a univariate test on all one-to-one matches.",
     description=(
-        "Plot the distribution of p-values from t-test on all one-to-one "
-        "matches (case vs. control)."
-    )
+        "Plot the distribution of p-values from a univariate test on all "
+        "one-to-one matches (case vs. control).  Supports independent tests "
+        "(t, Mann-Whitney) and paired tests (paired-t, Wilcoxon signed-rank) "
+        "that exploit the matched-pair structure.  Pass correct=True to append "
+        "a Benjamini-Hochberg q_value column to the downloadable TSV."
+    ),
+)
+
+plugin.visualizers.register_function(
+    function=assess_covariate_balance,
+    inputs={
+        "case_match_collection": CaseMatchCollection,
+    },
+    input_descriptions={
+        "case_match_collection": "Iterations of one-to-one matchings.",
+    },
+    parameters={
+        "sample_metadata": Metadata,
+        "case_control_column": Str,
+        "case_identifier": Str,
+        "categories": List[Str],
+    },
+    parameter_descriptions={
+        "sample_metadata": MD_DESC,
+        "case_control_column": CC_COL_DESC,
+        "case_identifier": CASE_ID_DESC,
+        "categories": DESC.CATEGORIES,
+    },
+    name="Plot covariate balance (Love plot) pre and post matching.",
+    description=(
+        "Computes the standardized mean difference (SMD; Cohen's d) for each "
+        "specified covariate before and after matching, averaged across all "
+        "matchings in the collection, and renders a Love plot.  Values below "
+        "|SMD| = 0.1 are considered well-balanced."
+    ),
 )
 
 
-plugin.register_semantic_types(CaseMatch, OneToOne, OneToMany,
-                               CaseMatchCollection)
+plugin.register_semantic_types(CaseMatch, OneToOne, OneToMany, CaseMatchCollection)
 plugin.register_semantic_type_to_format(
-    CaseMatch[OneToOne | OneToMany],
-    artifact_format=CaseMatchDirFmt
+    CaseMatch[OneToOne | OneToMany], artifact_format=CaseMatchDirFmt
 )
 plugin.register_semantic_type_to_format(
-    CaseMatchCollection,
-    artifact_format=CaseMatchCollectionDirFmt
+    CaseMatchCollection, artifact_format=CaseMatchCollectionDirFmt
 )
 plugin.register_formats(CaseMatchDirFmt, CaseMatchCollectionDirFmt)
 

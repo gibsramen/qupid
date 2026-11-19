@@ -24,6 +24,16 @@ class TestMatchers:
         assert (exp_hits == hits).all()
 
 
+class TestMatchContinuousRtol:
+    def test_large_value_no_false_positive(self):
+        focus_value = 100000.0
+        tol = 1.0
+        background_values = np.array([99999.5, 100001.0, 100001.5, 100003.0])
+        hits = util._match_continuous(focus_value, background_values, tol)
+        exp_hits = np.array([True, True, False, False])
+        assert (exp_hits == hits).all()
+
+
 def test_infer_types():
     a = pd.Series([1, 2, 3, 4, 5])
     b = pd.Series(["A", "B", "C", "D", "E"])
@@ -39,3 +49,9 @@ def test_infer_types():
 
     exp_err_msg = "Focus and background do not have the same dtype"
     assert exp_err_msg == str(exc_info.value)
+
+
+def test_infer_mixed_object_is_discrete():
+    mixed = pd.Series([1, "two", 3, "four"])
+    result = util._infer_column_type(mixed, mixed)
+    assert result == "discrete"

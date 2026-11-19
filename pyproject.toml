@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qupid"
+dynamic = ["version"]
+description = "Case-control matching for microbiome data."
+readme = "README.md"
+license = {text = "BSD-3-Clause"}
+authors = [{name = "Gibraan Rahman", email = "grahman@eng.ucsd.edu"}]
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: BSD License",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: Unix",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS :: MacOS X",
+]
+dependencies = [
+    "numpy",
+    "biom-format",
+    "pandas>=2.0",
+    "scikit-bio",
+    "networkx",
+    "joblib",
+    "scipy",
+    "click",
+    "seaborn",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "ruff", "mypy"]
+
+[project.urls]
+Homepage = "https://github.com/gibsramen/qupid"
+
+[project.scripts]
+qupid = "qupid.cli.cli:qupid"
+
+[project.entry-points."qiime2.plugins"]
+q2-qupid = "qupid.q2.plugin_setup:plugin"
+
+[tool.setuptools.dynamic]
+version = {attr = "qupid.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501"]  # line length enforced by formatter
+
+[tool.mypy]
+ignore_missing_imports = true

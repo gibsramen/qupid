@@ -1,4 +1,6 @@
-from typing import Collection, Sequence, List
+from __future__ import annotations
+
+from typing import Collection, Sequence
 
 import pandas as pd
 
@@ -32,14 +34,9 @@ class NoMatchesError(Exception):
 
 class MissingCategoriesError(Exception):
     def __init__(
-        self,
-        categories: List[str],
-        target_name: str,
-        target_df: pd.DataFrame
+        self, categories: list[str], target_name: str, target_df: pd.DataFrame
     ):
-        self.missing_categories = (
-            set(categories).difference(set(target_df.columns))
-        )
+        self.missing_categories = set(categories).difference(set(target_df.columns))
         self.message = (
             f"The following categories are missing from {target_name}: "
             f"{self.missing_categories}"
@@ -50,9 +47,7 @@ class MissingCategoriesError(Exception):
 class NoMoreControlsError(Exception):
     def __init__(self, remaining: Collection = None):
         self.remaining = remaining
-        self.message = (
-            "Prematurely exhausted all matching controls."
-        )
+        self.message = "Prematurely exhausted all matching controls."
         if remaining is not None:
             self.message += f" Remaining cases: {self.remaining}"
         super().__init__(self.message)

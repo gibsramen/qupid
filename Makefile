@@ -5,13 +5,15 @@ test_all: standalone_test q2_test
 stylecheck_all: standalone_stylecheck q2_stylecheck
 
 standalone_stylecheck:
-	flake8 qupid/*.py
-	flake8 qupid/cli/*.py
-	flake8 qupid/tests/*.py
-	flake8 setup.py
+	ruff check qupid/*.py
+	ruff check qupid/cli/*.py
+	ruff check qupid/tests/*.py
 
 q2_stylecheck:
-	flake8 qupid/q2/*.py
+	ruff check qupid/q2/*.py
+
+typecheck:
+	mypy qupid/
 
 standalone_test:
 	pytest --cov-report term-missing --cov=qupid --cov-config=config/standalone_cov.ini qupid/tests/ --cov-branch

@@ -55,8 +55,7 @@ class TestErrors:
 
         exp_msg = "No valid matches found for sample S1A."
         with pytest.raises(mexc.NoMatchesError) as exc_info:
-            match_by_single(s1, s2, tolerance=0.5,
-                            on_failure="raise")
+            match_by_single(s1, s2, tolerance=0.5, on_failure="raise")
         assert str(exc_info.value) == exp_msg
 
     def test_match_by_multiple_cat_subset_err(self):
@@ -68,11 +67,12 @@ class TestErrors:
         focus_index = [f"S{x}A" for x in range(5)]
         bg_index = [f"S{x}B" for x in range(7)]
 
-        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2},
-                             index=focus_index)
-        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2,
-                           "cat_3": bg_cat_1},
-                          index=bg_index)
+        focus = pd.DataFrame(
+            {"cat_1": focus_cat_1, "cat_2": focus_cat_2}, index=focus_index
+        )
+        bg = pd.DataFrame(
+            {"cat_1": bg_cat_1, "cat_2": bg_cat_2, "cat_3": bg_cat_1}, index=bg_index
+        )
 
         cats = ["cat_1", "cat_2", "cat_3"]
         tol_map = {"cat_2": 1.0}
@@ -82,11 +82,11 @@ class TestErrors:
         assert exc_info.value.missing_categories == {"cat_3"}
         assert "focus" in str(exc_info.value)
 
-        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2,
-                              "cat_3": focus_cat_1},
-                             index=focus_index)
-        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2},
-                          index=bg_index)
+        focus = pd.DataFrame(
+            {"cat_1": focus_cat_1, "cat_2": focus_cat_2, "cat_3": focus_cat_1},
+            index=focus_index,
+        )
+        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2}, index=bg_index)
 
         with pytest.raises(mexc.MissingCategoriesError) as exc_info:
             match_by_multiple(focus, bg, cats, tol_map)
@@ -99,7 +99,7 @@ class TestErrors:
             "S1A": {"S1B", "S2B", "S3B"},
             "S2A": {"S4B"},
             "S3A": {"S4B", "S5B"},
-            "S4A": {"S5B"}
+            "S4A": {"S5B"},
         }
         match = mm.CaseMatchOneToMany(data)
         with pytest.raises(mexc.NoMoreControlsError):
@@ -111,14 +111,13 @@ class TestErrors:
             "S1A": {"S1B", "S2B", "S3B"},
             "S2A": {"S4B"},
             "S3A": {"S4B", "S5B"},
-            "S4A": {"S5B"}
+            "S4A": {"S5B"},
         }
         match = mm.CaseMatchOneToMany(data)
         with pytest.warns(UserWarning) as warn_info:
             match.create_matched_pairs(strict=False)
 
-        exp_msg = "Some cases were not matched to a control."
-        assert str(warn_info[0].message) == exp_msg
+        assert "Some cases were not matched to a control" in str(warn_info[0].message)
 
     def test_multiple_no_tol_map(self):
         focus_cat_1 = ["A", "B", "C", "B", "C"]
@@ -129,10 +128,10 @@ class TestErrors:
         focus_index = [f"S{x}A" for x in range(5)]
         bg_index = [f"S{x}B" for x in range(7)]
 
-        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2},
-                             index=focus_index)
-        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2},
-                          index=bg_index)
+        focus = pd.DataFrame(
+            {"cat_1": focus_cat_1, "cat_2": focus_cat_2}, index=focus_index
+        )
+        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2}, index=bg_index)
 
         cats = ["cat_1", "cat_2"]
 
@@ -167,11 +166,12 @@ class TestErrors:
         assert str(exc_info.value) == exp_msg
 
     @pytest.mark.parametrize(
-        "test_input", [
+        "test_input",
+        [
             {"A": {"X"}, "B": "Y"},
             {"A": {5}, "B": {"Y"}},
             {5: {"X"}, "B": {"Y"}},
-        ]
+        ],
     )
     def test_invalid_input(self, test_input):
         with pytest.raises(ValueError) as exc_info:
@@ -181,11 +181,13 @@ class TestErrors:
         assert str(exc_info.value) == exp_err_msg
 
     def test_type_incompat(self):
-        focus = pd.Series([1, 2, 3, 4, 5, "dunsparce"])
+        focus = pd.Series(["a", "b", "c", "d", "e", "dunsparce"])
         focus.index = [f"F{x+1}" for x in range(len(focus))]
         focus.name = "cat"
 
-        background = pd.Series([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, "delibird"])
+        background = pd.Series(
+            ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "delibird"]
+        )
         background.index = [f"B{x+1}" for x in range(len(background))]
         background.name = "cat"
 
@@ -221,7 +223,7 @@ class TestCaseMatch:
             "S4A": {"S1B", "S4B", "S5B", "S6B"},
             "S5A": {"S1B", "S2B", "S5B", "S6B"},
             "S6A": {"S2B", "S5B", "S6B"},
-            "S7A": {"S2B", "S3B"}
+            "S7A": {"S2B", "S3B"},
         }
         assert match.case_control_map == exp_match
 
@@ -234,10 +236,10 @@ class TestCaseMatch:
         focus_index = [f"S{x}A" for x in range(5)]
         bg_index = [f"S{x}B" for x in range(7)]
 
-        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2},
-                             index=focus_index)
-        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2},
-                          index=bg_index)
+        focus = pd.DataFrame(
+            {"cat_1": focus_cat_1, "cat_2": focus_cat_2}, index=focus_index
+        )
+        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2}, index=bg_index)
 
         cats = ["cat_1", "cat_2"]
         tol_map = {"cat_2": 1.0}
@@ -248,23 +250,17 @@ class TestCaseMatch:
             "S1A": {"S1B", "S2B"},
             "S2A": {"S3B", "S5B"},
             "S3A": {"S2B"},
-            "S4A": {"S5B"}
+            "S4A": {"S5B"},
         }
         assert match.case_control_map == exp_match
 
     def test_lt(self):
-        cm_1 = mm.CaseMatchOneToOne({
-            "S0A": {"S1B"},
-            "S1A": {"S2B"},
-            "S2A": {"S3B"},
-            "S3A": {"S4B"}
-        })
-        cm_2 = mm.CaseMatchOneToOne({
-            "S0A": {"S1B"},
-            "S1A": {"S2B"},
-            "S2A": {"S4B"},
-            "S3A": {"S3B"}
-        })
+        cm_1 = mm.CaseMatchOneToOne(
+            {"S0A": {"S1B"}, "S1A": {"S2B"}, "S2A": {"S3B"}, "S3A": {"S4B"}}
+        )
+        cm_2 = mm.CaseMatchOneToOne(
+            {"S0A": {"S1B"}, "S1A": {"S2B"}, "S2A": {"S4B"}, "S3A": {"S3B"}}
+        )
         assert cm_1 < cm_2
 
     def test_bool_column_type(self):
@@ -276,10 +272,10 @@ class TestCaseMatch:
         focus_index = [f"S{x}A" for x in range(5)]
         bg_index = [f"S{x}B" for x in range(7)]
 
-        focus = pd.DataFrame({"cat_1": focus_cat_1, "cat_2": focus_cat_2},
-                             index=focus_index)
-        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2},
-                          index=bg_index)
+        focus = pd.DataFrame(
+            {"cat_1": focus_cat_1, "cat_2": focus_cat_2}, index=focus_index
+        )
+        bg = pd.DataFrame({"cat_1": bg_cat_1, "cat_2": bg_cat_2}, index=bg_index)
 
         cats = ["cat_1", "cat_2"]
 
@@ -367,10 +363,7 @@ class TestCaseMatch:
 
         assert isinstance(matched_pairs, mm.CaseMatchOneToOne)
 
-        ctrl_lens = [
-            len(v) == 1
-            for k, v in matched_pairs.case_control_map.items()
-        ]
+        ctrl_lens = [len(v) == 1 for k, v in matched_pairs.case_control_map.items()]
         assert all(ctrl_lens)
 
     def test_on_failure_continue(self):
@@ -389,7 +382,7 @@ class TestCaseMatch:
             "S5A": {"S1B", "S2B", "S5B", "S6B"},
             "S6A": {"S2B", "S5B", "S6B"},
             "S7A": {"S2B", "S3B"},
-            "S8A": set()
+            "S8A": set(),
         }
         assert match.case_control_map == exp_match
 
@@ -400,9 +393,7 @@ class TestCaseMatch:
         json_in = os.path.join(os.path.dirname(__file__), "data/test.json")
         match = mm.CaseMatchOneToMany.load(json_in)
         # Total is 36 so guaranteed to not hit all of them
-        all_matched_pairs = match.create_matched_pairs(
-            iterations=5, seed=63, n_jobs=2
-        )
+        all_matched_pairs = match.create_matched_pairs(iterations=5, seed=63, n_jobs=2)
         match_df = all_matched_pairs.to_dataframe()
 
         exp_matrix = {
@@ -411,7 +402,7 @@ class TestCaseMatch:
             2: ["S4B", "S4B", "S4B", "S4B", "S4B"],
             3: ["S5B", "S8B", "S5B", "S6B", "S7B"],
             4: ["S3B", "S3B", "S3B", "S3B", "S3B"],
-            5: ["S8B", "S6B", "S8B", "S8B", "S8B"]
+            5: ["S8B", "S6B", "S8B", "S8B", "S8B"],
         }
         exp_df = pd.DataFrame(exp_matrix).T
         exp_df.index = [f"S{x}A" for x in range(6)]
@@ -445,7 +436,7 @@ class TestCaseMatch:
             "S5A": {"S1B", "S2B", "S5B", "S6B"},
             "S6A": {"S2B", "S5B", "S6B"},
             "S7A": {"S2B", "S3B"},
-            "S8A": set()
+            "S8A": set(),
         }
         assert match.case_control_map == exp_match
 
@@ -456,10 +447,7 @@ class TestCaseMatchCollection:
         controls = [f"S{x+1}B" for x in range(10)]
         rng = np.random.default_rng()
 
-        matches = [
-            rng.choice(controls, size=len(cases), replace=False)
-            for x in cases
-        ]
+        matches = [rng.choice(controls, size=len(cases), replace=False) for x in cases]
         df = pd.DataFrame.from_records(matches, index=cases)
         df.index.name = "case_id"
 
@@ -469,10 +457,9 @@ class TestCaseMatchCollection:
         pd.testing.assert_frame_equal(df, df2)
 
         cm_coll = [dict(df[x]) for x in df]
-        cm_coll = mm.CaseMatchCollection([
-            mm.CaseMatchOneToOne({k: {v} for k, v in cm.items()})
-            for cm in cm_coll
-        ])
+        cm_coll = mm.CaseMatchCollection(
+            [mm.CaseMatchOneToOne({k: {v} for k, v in cm.items()}) for cm in cm_coll]
+        )
         fpath_2 = f"{tmp_path}/coll_2.tsv"
         cm_coll.save(fpath_2)
         df3 = mm.CaseMatchCollection.load(fpath_2).to_dataframe()
@@ -519,3 +506,164 @@ class TestCaseMatchCollection:
 
         assert len(set(case_means)) == 1
         assert len(set(ctrl_means)) == num_uniq_mean_sets
+
+
+class TestBugFixes:
+    def test_on_failure_uppercase_raises(self):
+        s1 = pd.Series([0.0, 1.0])
+        s2 = pd.Series([10.0, 20.0])
+        s1.index = ["S0A", "S1A"]
+        s2.index = ["S0B", "S1B"]
+        with pytest.raises(mexc.NoMatchesError):
+            match_by_single(s1, s2, tolerance=0.5, on_failure="RAISE")
+
+    def test_on_failure_uppercase_warns(self):
+        s1 = pd.Series([0.0, 10.0])
+        s2 = pd.Series([10.0, 20.0])
+        s1.index = ["S0A", "S1A"]
+        s2.index = ["S0B", "S1B"]
+        with pytest.warns(UserWarning):
+            match_by_single(s1, s2, tolerance=0.5, on_failure="WARN")
+
+    def test_multiple_empty_intersection_continue(self):
+        focus = pd.DataFrame({"cat_1": ["A"], "cat_2": ["X"]}, index=["S0A"])
+        bg = pd.DataFrame(
+            {"cat_1": ["A", "B"], "cat_2": ["Y", "X"]}, index=["S0B", "S1B"]
+        )
+        match = match_by_multiple(focus, bg, ["cat_1", "cat_2"], on_failure="continue")
+        assert match.case_control_map == {}
+
+    def test_multiple_empty_intersection_warn(self):
+        focus = pd.DataFrame({"cat_1": ["A"], "cat_2": ["X"]}, index=["S0A"])
+        bg = pd.DataFrame(
+            {"cat_1": ["A", "B"], "cat_2": ["Y", "X"]}, index=["S0B", "S1B"]
+        )
+        with pytest.warns(UserWarning, match="S0A"):
+            match = match_by_multiple(focus, bg, ["cat_1", "cat_2"], on_failure="warn")
+        assert match.case_control_map == {}
+
+    def test_controls_empty_map(self):
+        cm = mm.CaseMatchOneToMany({})
+        assert cm.controls == set()
+        assert cm.cases == set()
+
+    def test_comparison_includes_case_keys(self):
+        cm1 = mm.CaseMatchOneToOne({"S0A": {"S1B"}, "S1A": {"S2B"}})
+        cm2 = mm.CaseMatchOneToOne({"S0A": {"S2B"}, "S1A": {"S1B"}})
+        assert cm1 != cm2
+        assert cm1 < cm2
+        assert cm2 > cm1
+        assert sorted([cm2, cm1]) == sorted([cm1, cm2])
+
+
+class TestCodeReviewFindings:
+    def test_to_series_empty(self):
+        cm = mm.CaseMatchOneToOne({})
+        result = cm.to_series()
+        assert isinstance(result, pd.Series)
+        assert len(result) == 0
+
+    def test_to_dataframe_nan_warning(self):
+        cm_a = mm.CaseMatchOneToOne({"S0A": {"S0B"}, "S1A": {"S1B"}})
+        cm_b = mm.CaseMatchOneToOne({"S0A": {"S2B"}})
+        collection = mm.CaseMatchCollection([cm_a, cm_b])
+        with pytest.warns(UserWarning, match="partial"):
+            df = collection.to_dataframe()
+        assert df.loc["S1A"].isna().any()
+
+    def test_match_by_multiple_invalid_on_failure(self):
+        focus = pd.DataFrame({"cat_1": ["A"]}, index=["S0A"])
+        bg = pd.DataFrame({"cat_1": ["A"]}, index=["S0B"])
+        with pytest.raises(ValueError, match="on_failure"):
+            match_by_multiple(focus, bg, categories=[], on_failure="INVALID")
+
+    def test_negative_tolerance_raises(self):
+        s1 = pd.Series([1.0, 2.0])
+        s2 = pd.Series([1.0, 2.0])
+        s1.index = ["S0A", "S1A"]
+        s2.index = ["S0B", "S1B"]
+        with pytest.raises(ValueError, match="non-negative"):
+            match_by_single(s1, s2, tolerance=-1.0)
+
+    def test_create_matched_pairs_zero_iterations(self):
+        data = {"S0A": {"S0B"}, "S1A": {"S1B"}}
+        match = mm.CaseMatchOneToMany(data)
+        with pytest.raises(ValueError, match="iterations must be >= 1"):
+            match.create_matched_pairs(iterations=0)
+
+    def test_total_ordering_le_ge(self):
+        cm1 = mm.CaseMatchOneToOne({"S0A": {"S1B"}, "S1A": {"S2B"}})
+        cm2 = mm.CaseMatchOneToOne({"S0A": {"S2B"}, "S1A": {"S1B"}})
+        assert cm1 < cm2
+        assert cm1 <= cm2
+        assert cm2 > cm1
+        assert cm2 >= cm1
+        assert cm1 <= cm1
+        assert cm1 >= cm1
+
+    def test_match_by_multiple_warn_once_per_dropped_case(self):
+        focus = pd.DataFrame(
+            {"cat_1": ["A", "B"], "cat_2": ["X", "Z"]},
+            index=["S0A", "S1A"],
+        )
+        bg = pd.DataFrame(
+            {"cat_1": ["A", "A"], "cat_2": ["X", "X"]},
+            index=["S0B", "S1B"],
+        )
+        with pytest.warns(UserWarning) as warn_info:
+            match_by_multiple(focus, bg, ["cat_1", "cat_2"], on_failure="warn")
+
+        no_match_warns = [
+            w for w in warn_info if "No matches found for S1A" in str(w.message)
+        ]
+        assert len(no_match_warns) == 1
+
+
+class TestCreateMatchedGroups:
+    """D3 — fixed k:1 (1:N) matching via create_matched_groups."""
+
+    def _fully_connected(self, n_cases: int, n_ctrls: int) -> mm.CaseMatchOneToMany:
+        cases = [f"C{i}" for i in range(n_cases)]
+        ctrls = {f"T{j}" for j in range(n_ctrls)}
+        return mm.CaseMatchOneToMany({case: ctrls for case in cases})
+
+    def test_basic_size(self):
+        cm = self._fully_connected(4, 12)
+        groups = cm.create_matched_groups(n_controls=3, seed=42)
+        assert len(groups) >= 1
+        for g in groups:
+            for case_ctrls in g.case_control_map.values():
+                assert len(case_ctrls) == 3
+
+    def test_no_shared_controls_across_cases(self):
+        cm = self._fully_connected(4, 12)
+        groups = cm.create_matched_groups(n_controls=3, seed=0)
+        for g in groups:
+            assigned = [ctrl for ctrls in g.case_control_map.values() for ctrl in ctrls]
+            assert len(assigned) == len(set(assigned))
+
+    def test_strict_failure(self):
+        data = {"C0": {"T0", "T1"}, "C1": {"T0", "T1"}}
+        cm = mm.CaseMatchOneToMany(data)
+        with pytest.raises(mexc.NoMoreControlsError):
+            cm.create_matched_groups(n_controls=3)
+
+    def test_strict_false_warns(self):
+        data = {"C0": {"T0", "T1"}, "C1": {"T0", "T1"}}
+        cm = mm.CaseMatchOneToMany(data)
+        with pytest.warns(UserWarning):
+            result = cm.create_matched_groups(n_controls=3, strict=False)
+        assert len(result) >= 1
+
+    def test_invalid_n_controls(self):
+        cm = mm.CaseMatchOneToMany({"C0": {"T0"}})
+        with pytest.raises(ValueError, match="n_controls must be >= 1"):
+            cm.create_matched_groups(n_controls=0)
+
+    def test_reproducible(self):
+        cm = self._fully_connected(3, 12)
+        g1 = cm.create_matched_groups(n_controls=2, seed=42, iterations=5)
+        g2 = cm.create_matched_groups(n_controls=2, seed=42, iterations=5)
+        assert len(g1) == len(g2)
+        for a, b in zip(g1, g2):
+            assert a.case_control_map == b.case_control_map
