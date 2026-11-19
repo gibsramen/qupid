@@ -159,7 +159,6 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             for child_state in child_states
         )
 
-        # Sort after deduplication for reproducibility (set ordering is non-deterministic).
         cm_list = sorted(set(all_matches))
         return CaseMatchCollection(cm_list)
 
@@ -264,7 +263,6 @@ class CaseMatchOneToMany(_BaseCaseMatch):
             for child_state in child_states
         )
 
-        # Deduplicate by the (case, frozenset(controls)) signature.
         seen: set[frozenset] = set()
         unique: list[CaseMatchOneToMany] = []
         for cm in results:
@@ -323,7 +321,6 @@ class CaseMatchOneToOne(_BaseCaseMatch):
     def to_series(self) -> pd.Series:
         if not self.case_control_map:
             return pd.Series(dtype=object)
-        # Each value set has exactly one control (1:1 invariant enforced at __init__).
         pairs = [
             (case, next(iter(ctrls))) for case, ctrls in self.case_control_map.items()
         ]
@@ -337,8 +334,6 @@ class CaseMatchOneToOne(_BaseCaseMatch):
         )
 
     def __hash__(self) -> int:
-        # frozenset is order-independent so sorting before building it is wasted
-        # work; iterate the map directly.
         return hash(
             frozenset(
                 (case, next(iter(ctrls)))

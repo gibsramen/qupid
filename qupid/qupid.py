@@ -140,10 +140,7 @@ def match_by_multiple(
             surviving_focus, background[cat], tol, on_failure
         ).case_control_map
         for fidx, fhits in observed.items():
-            if fidx not in matches:
-                continue  # belt-and-suspenders
             if not fhits:
-                # match_by_single already warned; drop case silently here
                 del matches[fidx]
                 continue
             matches[fidx] = matches[fidx] & fhits

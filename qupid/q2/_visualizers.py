@@ -150,7 +150,6 @@ def assess_covariate_balance(
     results_loc = os.path.join(output_dir, "covariate_balance.tsv")
     avg_balance.to_csv(results_loc, sep="\t", index=False)
 
-    # Love plot: covariates on y-axis, |SMD| on x-axis
     n = len(avg_balance)
     fig_h = max(3.0, n * 0.55 + 1.0)
     fig, ax = plt.subplots(1, 1, dpi=300, facecolor="white", figsize=(6, fig_h))

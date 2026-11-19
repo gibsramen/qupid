@@ -100,7 +100,6 @@ def test_match_groups():
         assert os.path.exists("groups.tsv")
         df = pd.read_table("groups.tsv", sep="\t")
         assert list(df.columns) == ["iteration", "case", "control"]
-        # Each case should have exactly 2 controls per iteration
         counts = df.groupby(["iteration", "case"])["control"].count()
         assert (counts == 2).all()
 
@@ -115,7 +114,6 @@ def test_assess_univariate():
         _write_split(focus, background)
         _run_shuffle(runner, iterations=10)
 
-        # Write values TSV
         rng = np.random.default_rng(0)
         vals = pd.Series(rng.gamma(2, size=len(ids)), index=ids, name="value")
         vals.to_csv("values.tsv", sep="\t", header=True)
@@ -153,7 +151,6 @@ def test_assess_multivariate():
         _write_split(focus, background)
         _run_shuffle(runner, iterations=5)
 
-        # Write distance matrix in skbio lsmat format
         rng = np.random.default_rng(1)
         raw = rng.beta(1, 1, (n, n))
         dm_arr = np.triu(raw, 1) + np.triu(raw, 1).T

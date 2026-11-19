@@ -12,11 +12,6 @@ from skbio.stats.distance import permanova as _skbio_permanova
 
 from qupid.casematch import CaseMatchCollection, CaseMatchOneToMany, CaseMatchOneToOne
 
-# Registry of supported univariate tests.
-# Dict over if/elif so the CLI can enumerate valid aliases dynamically
-# (click.Choice uses _TEST_REGISTRY.keys()) and paired tests can be added
-# without touching the dispatch logic.
-# Each entry: alias -> (scipy function, display method name, statistic name, paired?).
 _TEST_REGISTRY: dict[str, tuple[Callable, str, str, bool]] = {
     "t": (ss.ttest_ind, "t-test", "t", False),
     "ttest": (ss.ttest_ind, "t-test", "t", False),
@@ -252,7 +247,6 @@ def _bh_fdr(p_values: np.ndarray) -> np.ndarray:
     ranks = np.empty(n, dtype=int)
     ranks[order] = np.arange(1, n + 1)
     q = np.minimum(p * n / ranks, 1.0)
-    # Enforce monotonicity right-to-left
     q[order] = np.minimum.accumulate(q[order][::-1])[::-1]
     return q
 
@@ -308,7 +302,6 @@ def _single_univariate_test(
     :rtype: pd.Series
     """
     if paired:
-        # Iterate the case_control_map once to preserve case→control pairing order.
         case_ids: list[str] = []
         ctrl_ids: list[str] = []
         for case, ctrl_set in casematch.case_control_map.items():

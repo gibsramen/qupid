@@ -181,7 +181,6 @@ class TestErrors:
         assert str(exc_info.value) == exp_err_msg
 
     def test_type_incompat(self):
-        # Pure-string series so is_string_dtype returns True on pandas >= 2.0
         focus = pd.Series(["a", "b", "c", "d", "e", "dunsparce"])
         focus.index = [f"F{x+1}" for x in range(len(focus))]
         focus.name = "cat"
@@ -510,7 +509,6 @@ class TestCaseMatchCollection:
 
 
 class TestBugFixes:
-    # A2 — on_failure case-insensitivity
     def test_on_failure_uppercase_raises(self):
         s1 = pd.Series([0.0, 1.0])
         s2 = pd.Series([10.0, 20.0])
@@ -527,13 +525,11 @@ class TestBugFixes:
         with pytest.warns(UserWarning):
             match_by_single(s1, s2, tolerance=0.5, on_failure="WARN")
 
-    # A4 — empty control set silently carried in match_by_multiple
     def test_multiple_empty_intersection_continue(self):
         focus = pd.DataFrame({"cat_1": ["A"], "cat_2": ["X"]}, index=["S0A"])
         bg = pd.DataFrame(
             {"cat_1": ["A", "B"], "cat_2": ["Y", "X"]}, index=["S0B", "S1B"]
         )
-        # cat_1 matches S0A→{S0B}; cat_2 matches S0A→{S1B}; intersection={}
         match = match_by_multiple(focus, bg, ["cat_1", "cat_2"], on_failure="continue")
         assert match.case_control_map == {}
 
@@ -546,31 +542,27 @@ class TestBugFixes:
             match = match_by_multiple(focus, bg, ["cat_1", "cat_2"], on_failure="warn")
         assert match.case_control_map == {}
 
-    # A5 — controls property on empty CaseMatchOneToMany
     def test_controls_empty_map(self):
         cm = mm.CaseMatchOneToMany({})
         assert cm.controls == set()
         assert cm.cases == set()
 
-    # A6 — comparison operators use sorted (case, control) pairs
     def test_comparison_includes_case_keys(self):
         cm1 = mm.CaseMatchOneToOne({"S0A": {"S1B"}, "S1A": {"S2B"}})
         cm2 = mm.CaseMatchOneToOne({"S0A": {"S2B"}, "S1A": {"S1B"}})
         assert cm1 != cm2
-        assert cm1 < cm2  # ("S0A","S1B") < ("S0A","S2B") lexicographically
+        assert cm1 < cm2
         assert cm2 > cm1
         assert sorted([cm2, cm1]) == sorted([cm1, cm2])
 
 
 class TestCodeReviewFindings:
-    # F2 — to_series() on empty CaseMatchOneToOne returns empty Series
     def test_to_series_empty(self):
         cm = mm.CaseMatchOneToOne({})
         result = cm.to_series()
         assert isinstance(result, pd.Series)
         assert len(result) == 0
 
-    # F3 — to_dataframe() warns when partial matchings produce NaN
     def test_to_dataframe_nan_warning(self):
         cm_a = mm.CaseMatchOneToOne({"S0A": {"S0B"}, "S1A": {"S1B"}})
         cm_b = mm.CaseMatchOneToOne({"S0A": {"S2B"}})
@@ -579,14 +571,12 @@ class TestCodeReviewFindings:
             df = collection.to_dataframe()
         assert df.loc["S1A"].isna().any()
 
-    # F4 — match_by_multiple validates on_failure before any other check
     def test_match_by_multiple_invalid_on_failure(self):
         focus = pd.DataFrame({"cat_1": ["A"]}, index=["S0A"])
         bg = pd.DataFrame({"cat_1": ["A"]}, index=["S0B"])
         with pytest.raises(ValueError, match="on_failure"):
             match_by_multiple(focus, bg, categories=[], on_failure="INVALID")
 
-    # F5 — negative tolerance raises ValueError (Python API)
     def test_negative_tolerance_raises(self):
         s1 = pd.Series([1.0, 2.0])
         s2 = pd.Series([1.0, 2.0])
@@ -595,14 +585,12 @@ class TestCodeReviewFindings:
         with pytest.raises(ValueError, match="non-negative"):
             match_by_single(s1, s2, tolerance=-1.0)
 
-    # F7 — iterations=0 raises ValueError
     def test_create_matched_pairs_zero_iterations(self):
         data = {"S0A": {"S0B"}, "S1A": {"S1B"}}
         match = mm.CaseMatchOneToMany(data)
         with pytest.raises(ValueError, match="iterations must be >= 1"):
             match.create_matched_pairs(iterations=0)
 
-    # F11 — CaseMatchOneToOne supports <= and >= via @total_ordering
     def test_total_ordering_le_ge(self):
         cm1 = mm.CaseMatchOneToOne({"S0A": {"S1B"}, "S1A": {"S2B"}})
         cm2 = mm.CaseMatchOneToOne({"S0A": {"S2B"}, "S1A": {"S1B"}})
@@ -613,8 +601,6 @@ class TestCodeReviewFindings:
         assert cm1 <= cm1
         assert cm1 >= cm1
 
-    # F12 — match_by_multiple with on_failure='warn' emits exactly one warning
-    #        per dropped case, not one per remaining category
     def test_match_by_multiple_warn_once_per_dropped_case(self):
         focus = pd.DataFrame(
             {"cat_1": ["A", "B"], "cat_2": ["X", "Z"]},
@@ -657,7 +643,6 @@ class TestCreateMatchedGroups:
             assert len(assigned) == len(set(assigned))
 
     def test_strict_failure(self):
-        # 2 controls total, n_controls=3 exhausts pool in round 3
         data = {"C0": {"T0", "T1"}, "C1": {"T0", "T1"}}
         cm = mm.CaseMatchOneToMany(data)
         with pytest.raises(mexc.NoMoreControlsError):

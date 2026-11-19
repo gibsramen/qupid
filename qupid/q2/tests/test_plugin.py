@@ -138,14 +138,13 @@ def test_assess_covariate_balance(metadata, collection):
     )
 
 
-# A10 — malformed tolerance token raises a clear, informative ValueError
 @pytest.mark.parametrize(
     "bad_token,match_fragment",
     [
-        ("age_years10", "Malformed tolerance token"),  # no "+-" separator
-        ("age_years+-+-5", "Malformed tolerance token"),  # extra "+-"
-        ("age_years+-x", "Non-numeric tolerance value"),  # non-numeric value
-        ("age_years+--5", "non-negative"),  # F5: negative tolerance
+        ("age_years10", "Malformed tolerance token"),
+        ("age_years+-+-5", "Malformed tolerance token"),
+        ("age_years+-x", "Non-numeric tolerance value"),
+        ("age_years+--5", "non-negative"),
     ],
 )
 def test_malformed_tolerance(metadata, bad_token, match_fragment):

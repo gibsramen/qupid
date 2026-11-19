@@ -17,7 +17,6 @@ JOBS = "Number of CPUs to use for parallelization."
 SEED = "Integer to use as random seed."
 OUTPUT = "Path to save matches."
 
-# Stats / assessment
 MATCHES = "Path to a case-match TSV produced by 'shuffle' or 'match-groups'."
 VALUES = "Path to a two-column TSV (sample_id, value) for univariate testing."
 DISTANCE_MATRIX = (
@@ -33,5 +32,4 @@ CORRECT = "If set, append a Benjamini-Hochberg FDR 'q_value' column to the resul
 PERMUTATIONS = "Number of PERMANOVA permutations."
 CATEGORIES = "Metadata column(s) to include in the covariate-balance report."
 
-# k:1 matching
 N_CONTROLS = "Number of distinct controls to assign per case (k in k:1 matching)."

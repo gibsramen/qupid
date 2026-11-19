@@ -146,7 +146,6 @@ def match_groups(
         n_jobs=jobs,
     )
 
-    # Write long-format TSV: iteration, case, control
     rows = []
     for i, g in enumerate(groups):
         for case, ctrls in g.case_control_map.items():
@@ -241,7 +240,7 @@ def balance(focus, background, matches, categories, output):
     """Report standardized mean difference (SMD) per covariate pre/post matching."""
     focus_df, background_df = _load_focus_background(focus, background)
     coll = CaseMatchCollection.load(matches)
-    casematch = coll[0]  # first iteration as representative matching
+    casematch = coll[0]
     res = compute_covariate_balance(
         focus_df, background_df, casematch, list(categories)
     )

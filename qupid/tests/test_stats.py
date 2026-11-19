@@ -71,7 +71,6 @@ def test_univariate(example_collection, example_vals, test):
 
 
 def test_univariate_sample_size_per_record():
-    # A9 — sample_size must be computed per matching, not broadcast from [0]
     cm1 = mm.CaseMatchOneToOne(
         {"case_A": {"ctrl_A"}, "case_B": {"ctrl_B"}, "case_C": {"ctrl_C"}}
     )
@@ -83,10 +82,9 @@ def test_univariate_sample_size_per_record():
     values = pd.Series(rng.normal(size=len(all_ids)), index=all_ids)
 
     res = stats.bulk_univariate_test(collection, values, test="t")
-    assert set(res["sample_size"].values) == {6, 4}  # 3*2 and 2*2
+    assert set(res["sample_size"].values) == {6, 4}
 
 
-# D1 — paired statistical tests
 @pytest.mark.parametrize(
     "test,expected_method,expected_stat",
     [
@@ -119,7 +117,6 @@ def test_invalid_test_name(example_collection, example_vals):
         stats.bulk_univariate_test(example_collection, example_vals, test="nope")
 
 
-# D2 — covariate-balance diagnostics
 def test_smd_columns():
     focus = pd.DataFrame({"age": [10.0, 20.0, 30.0]}, index=["c0", "c1", "c2"])
     background = pd.DataFrame(
@@ -156,14 +153,12 @@ def test_smd_post_better_than_pre():
         {"age": [10.0, 10.0, 10.0, 50.0, 50.0, 50.0]},
         index=["b0", "b1", "b2", "b3", "b4", "b5"],
     )
-    # Pairs each focus (age=10) with a background at age=10, improving balance
     casematch = mm.CaseMatchOneToOne({"c0": {"b0"}, "c1": {"b1"}, "c2": {"b2"}})
     result = stats.compute_covariate_balance(focus, background, casematch, ["age"])
     age_row = result.loc[result["covariate"] == "age"].iloc[0]
     assert abs(age_row["smd_post"]) < abs(age_row["smd_pre"])
 
 
-# D4 — Benjamini-Hochberg FDR correction
 def test_correct_adds_q_column(example_collection, example_vals):
     res_q = stats.bulk_univariate_test(example_collection, example_vals, correct=True)
     assert "q_value" in res_q.columns

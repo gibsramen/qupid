@@ -25,15 +25,11 @@ class TestMatchers:
 
 
 class TestMatchContinuousRtol:
-    # A8 — np.isclose rtol=0: tolerance must be exact, not widened by value magnitude
     def test_large_value_no_false_positive(self):
-        # Old code used rtol=1e-5 (default), widening the window by rtol*|focus|.
-        # At focus=100000, atol=1: old window = 1 + 1e-5*100000 = 2.0; new = 1.0.
         focus_value = 100000.0
         tol = 1.0
         background_values = np.array([99999.5, 100001.0, 100001.5, 100003.0])
         hits = util._match_continuous(focus_value, background_values, tol)
-        # 100001.5 is 1.5 away — outside atol=1 but inside old rtol window (2.0)
         exp_hits = np.array([True, True, False, False])
         assert (exp_hits == hits).all()
 
