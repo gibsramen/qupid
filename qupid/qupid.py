@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from functools import partial
-from typing import List, Dict
 from warnings import warn
 
 import pandas as pd
@@ -34,7 +35,8 @@ def match_by_single(
     :returns: Matched control samples
     :rtype: qupid.CaseMatchOneToMany
     """
-    if on_failure.lower() not in VALID_ON_FAILURE_OPTS:
+    on_failure = on_failure.lower()
+    if on_failure not in VALID_ON_FAILURE_OPTS:
         raise ValueError(
             "Invalid argument for 'on_failure', must be one of "
             f"{VALID_ON_FAILURE_OPTS}"
@@ -59,11 +61,13 @@ def match_by_single(
         if tolerance is None:
             warn("No tolerance was provided, using 1e-08.")
             tolerance = 1e-08
+        elif tolerance < 0:
+            raise ValueError(f"Tolerance must be non-negative, got {tolerance}.")
 
         matcher = partial(util._match_continuous, tolerance=tolerance)
 
     matches = dict()
-    for f_idx, f_val in focus.iteritems():
+    for f_idx, f_val in focus.items():
         hits = matcher(f_val, background.values)
         if hits.any():
             matches[f_idx] = set(background.index[hits])
@@ -83,9 +87,9 @@ def match_by_single(
 def match_by_multiple(
     focus: pd.DataFrame,
     background: pd.DataFrame,
-    categories: List[str],
-    tolerance_map: Dict[str, float] = None,
-    on_failure: str = "raise"
+    categories: list[str],
+    tolerance_map: dict[str, float] = None,
+    on_failure: str = "raise",
 ) -> CaseMatchOneToMany:
     """Get matched samples for multiple categories.
 
@@ -96,25 +100,31 @@ def match_by_multiple(
     :type background: pd.DataFrame
 
     :param categories: Categories to include as matching criteria
-    :type categories: List[str]
+    :type categories: list[str]
 
     :param tolerance_map: Mapping of tolerances for continuous categories.
         Categories not represented default to 1e-08
-    :type tolerance_map: Dict[str, float]
+    :type tolerance_map: dict[str, float]
 
-    :param on_failure: Whether to 'raise' or 'ignore' sample for which a match
-        cannot be found, defaults to 'raise'
+    :param on_failure: Whether to 'raise', 'warn', or 'continue' when no
+        controls remain for a focus sample, defaults to 'raise'
     :type on_failure: str
 
     :returns: Matched control samples
     :rtype: qupid.CaseMatchOneToMany
     """
+    on_failure = on_failure.lower()
+    if on_failure not in VALID_ON_FAILURE_OPTS:
+        raise ValueError(
+            "Invalid argument for 'on_failure', must be one of "
+            f"{VALID_ON_FAILURE_OPTS}"
+        )
+
     if not util._are_categories_subset(categories, focus):
         raise exc.MissingCategoriesError(categories, "focus", focus)
 
     if not util._are_categories_subset(categories, background):
-        raise exc.MissingCategoriesError(categories, "background",
-                                         background)
+        raise exc.MissingCategoriesError(categories, "background", background)
 
     tolerance_map = tolerance_map or dict()
 
@@ -123,14 +133,26 @@ def match_by_multiple(
 
     for cat in categories:
         tol = tolerance_map.get(cat)
-        observed = match_by_single(focus[cat], background[cat],
-                                   tol, on_failure).case_control_map
+        if not matches:
+            break
+        surviving_focus = focus[cat].loc[list(matches.keys())]
+        observed = match_by_single(
+            surviving_focus, background[cat], tol, on_failure
+        ).case_control_map
         for fidx, fhits in observed.items():
-            # Reduce the matches with successive categories
+            if not fhits:
+                del matches[fidx]
+                continue
             matches[fidx] = matches[fidx] & fhits
             if not matches[fidx]:
                 if on_failure == "raise":
                     raise exc.NoMoreControlsError()
+                elif on_failure == "warn":
+                    warn(
+                        f"No controls remaining for {fidx} after applying"
+                        f" '{cat}', dropping case."
+                    )
+                del matches[fidx]
 
     metadata = pd.concat([focus, background])
     return CaseMatchOneToMany(matches, metadata)
@@ -139,14 +161,14 @@ def match_by_multiple(
 def shuffle(
     focus: pd.DataFrame,
     background: pd.DataFrame,
-    categories: List[str],
+    categories: list[str],
     iterations: int = 10,
-    tolerance_map: Dict[str, float] = None,
+    tolerance_map: dict[str, float] = None,
     on_failure: str = "raise",
     strict: bool = True,
     seed: int = None,
     n_jobs: int = 1,
-    parallel_args: dict = None
+    parallel_args: dict = None,
 ) -> pd.DataFrame:
     """Create multiple case-control matches on several matching criteria.
 
@@ -157,11 +179,11 @@ def shuffle(
     :type background: pd.DataFrame
 
     :param categories: Categories to include as matching criteria
-    :type categories: List[str]
+    :type categories: list[str]
 
     :param tolerance_map: Mapping of tolerances for continuous categories.
         Categories not represented are default to 1e-08
-    :type tolerance_map: Dict[str, float]
+    :type tolerance_map: dict[str, float]
 
     :param on_failure: Whether to 'raise' or 'warn' or 'continue' when no
         matches can be found for a focus sample, defaults to 'raise'
@@ -192,19 +214,21 @@ def shuffle(
         a discrete CaseMatchOneToOne instance
     :rtype: pd.DataFrame
     """
+    on_failure = on_failure.lower()
     if on_failure not in VALID_ON_FAILURE_OPTS:
         raise ValueError(
             "Invalid argument for 'on_failure', must be one of "
             f"{VALID_ON_FAILURE_OPTS}"
         )
 
-    cm_one_to_many = match_by_multiple(focus, background, categories,
-                                       tolerance_map, on_failure)
+    cm_one_to_many = match_by_multiple(
+        focus, background, categories, tolerance_map, on_failure
+    )
     res = cm_one_to_many.create_matched_pairs(
         iterations=iterations,
         strict=strict,
         seed=seed,
         n_jobs=n_jobs,
-        parallel_args=parallel_args
+        parallel_args=parallel_args,
     ).to_dataframe()
     return res

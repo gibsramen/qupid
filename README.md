@@ -16,6 +16,29 @@ You can install the most up-to-date version of Qupid from PyPi using the followi
 pip install qupid
 ```
 
+## Development
+
+Clone the repository and install in editable mode with dev dependencies (requires Python ≥ 3.9):
+
+```bash
+git clone https://github.com/gibsramen/qupid.git
+cd qupid
+pip install -e .[dev]
+```
+
+Run the test suite:
+
+```bash
+make test_all
+```
+
+Run lint and type checks:
+
+```bash
+ruff check qupid/
+mypy qupid/
+```
+
 ## Quickstart
 
 Qupid provides a convenience function, `shuffle`, to easily generate multiple matches based on matching critiera.
@@ -135,6 +158,22 @@ results_df = results.to_dataframe()
 results_df.head()
 ```
 
+### Generating k:1 matched groups
+
+When you want more statistical power, you can assign multiple controls per case (k:1 matching).
+`create_matched_groups` runs Hopcroft-Karp matching N times per iteration, removing already-assigned
+controls between rounds so that no control is shared across cases within the same group.
+
+```python
+# Assign 3 distinct controls to every case, across 50 independent groupings
+groups = cm.create_matched_groups(n_controls=3, iterations=50, seed=42)
+
+# Each element is a CaseMatchOneToMany with 3 controls per case
+print(len(groups[0].cases))    # 45
+for ctrl_set in groups[0].case_control_map.values():
+    assert len(ctrl_set) == 3  # exactly 3 distinct controls per case
+```
+
 ```
                                 0                 1   ...                98                99
 case_id                                               ...
@@ -221,6 +260,77 @@ sns.histplot(test_results["p-value"])
 ![p-value Histogram](https://raw.githubusercontent.com/gibsramen/qupid/main/imgs/asd_match_pvals.png)
 
 We see that most of the p-values are near zero which makes sense because we simulated our data with a difference between ASD and non-ASD samples.
+
+#### Paired statistical tests
+
+Because each `CaseMatchOneToOne` records an explicit pairing, you can exploit that structure with paired
+tests, which are more powerful than their independent counterparts when within-pair correlations are present.
+Pass `test="paired-t"` for the paired t-test or `test="wilcoxon"` for the Wilcoxon signed-rank test.
+
+```python
+paired_results = bulk_univariate_test(
+    casematches=results,
+    values=sample_values,
+    test="paired-t"
+)
+```
+
+Supported `test` values:
+
+| Alias | Test |
+|---|---|
+| `"t"` / `"ttest"` / `"t-test"` | Independent t-test |
+| `"mw"` / `"mann-whitney"` | Mann-Whitney U |
+| `"paired-t"` / `"ttest-rel"` | Paired t-test |
+| `"wilcoxon"` / `"wilcoxon-sr"` | Wilcoxon signed-rank |
+
+#### Multiple-testing correction
+
+When scanning many metadata columns at once, p-values should be corrected for multiple comparisons.
+Pass `correct=True` to append a Benjamini-Hochberg FDR `q_value` column to the results.
+
+```python
+corrected_results = bulk_univariate_test(
+    casematches=results,
+    values=sample_values,
+    test="t",
+    correct=True
+)
+# corrected_results now has a "q_value" column in addition to "p-value"
+```
+
+The same `correct=True` flag is available on `bulk_permanova`.
+
+### Assessing covariate balance
+
+A matched design is only as good as the balance it achieves.
+`compute_covariate_balance` reports the standardized mean difference (SMD, Cohen's d) for each covariate
+before and after matching.
+Values near zero indicate good balance; the conventional threshold for "well-balanced" is |SMD| < 0.1.
+
+```python
+from qupid import compute_covariate_balance
+
+# Use a single matching (e.g. the best iteration) to assess post-match balance
+best_match = results[15]
+
+balance = compute_covariate_balance(
+    focus=focus,
+    background=background,
+    casematch=best_match,
+    categories=["age_years"]
+)
+print(balance)
+```
+
+```
+  covariate  smd_pre  smd_post
+0  age_years    0.312     0.041
+```
+
+`smd_pre` is computed over all focus vs. all background samples; `smd_post` is computed over only the
+matched subsets.
+Numeric and boolean columns are supported; non-numeric columns are skipped with a warning.
 
 ### Saving and loading qupid results
 

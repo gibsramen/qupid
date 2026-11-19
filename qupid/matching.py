@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import collections
-import numpy as np
 from typing import Iterable
+
+import numpy as np
 
 import networkx as nx
 from networkx.algorithms.bipartite import sets as bipartite_sets
@@ -8,11 +11,7 @@ from networkx.algorithms.bipartite import sets as bipartite_sets
 INFINITY = float("inf")
 
 
-def hopcroft_karp_matching(
-    G: nx.Graph,
-    seed: int,
-    top_nodes: Iterable = None
-) -> dict:
+def hopcroft_karp_matching(G: nx.Graph, seed: int, top_nodes: Iterable = None) -> dict:
     """Returns a maximum cardinality matching of the bipartite graph G.
 
     NOTE: This function is modified from the NetworkX implementation:

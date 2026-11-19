@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import json
-from typing import Dict, Sequence, TypeVar
+from typing import Sequence, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -12,8 +14,7 @@ DiscreteValue = TypeVar("DiscreteValue", str, bool)
 ContinuousValue = TypeVar("ContinuousValue", float, int)
 
 
-def _do_category_values_overlap(focus: pd.Series,
-                                background: pd.Series) -> bool:
+def _do_category_values_overlap(focus: pd.Series, background: pd.Series) -> bool:
     """Check to make sure discrete category values overlap.
 
     :param focus: Samples to be matched
@@ -63,7 +64,7 @@ def _match_continuous(
     :returns: Binary array of matches
     :rtype: np.ndarray
     """
-    return np.isclose(background_values, focus_value, atol=tolerance)
+    return np.isclose(background_values, focus_value, atol=tolerance, rtol=0)
 
 
 def _match_discrete(
@@ -84,7 +85,7 @@ def _match_discrete(
     return np.array(focus_value == background_values)
 
 
-def _load(path: str) -> Dict[str, set]:
+def _load(path: str) -> dict[str, set]:
     """Load mapping file from JSON as dict.
 
     :param path: Location of filepath
@@ -98,11 +99,10 @@ def _load(path: str) -> Dict[str, set]:
 
 def _check_one_to_one(case_control_map: dict) -> bool:
     """Check if mapping dict is one-to-one (one control per case)."""
-    return all([len(ctrls) == 1 for ctrls in case_control_map.values()])
+    return all(len(ctrls) == 1 for ctrls in case_control_map.values())
 
 
-def _validate_distance_matrix(cases: set, controls: set,
-                              dm: DistanceMatrix) -> None:
+def _validate_distance_matrix(cases: set, controls: set, dm: DistanceMatrix) -> None:
     """Check to see if all cases and controls in DistanceMatrix."""
     cc_samples = cases.union(controls)
     dm_samples = set(dm.ids)
@@ -113,6 +113,7 @@ def _validate_distance_matrix(cases: set, controls: set,
 
 def _infer_column_type(focus: pd.Series, background: pd.Series) -> str:
     """Determine data types."""
+
     def check_dtype(col: pd.Series):
         if is_string_dtype(col) or is_bool_dtype(col):
             return "discrete"

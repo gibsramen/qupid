@@ -11,29 +11,45 @@ def match_one_to_many(
     categories: list,
     case_identifier: str,
     tolerances: list = None,
-    on_failure: str = "raise"
+    on_failure: str = "raise",
 ) -> CaseMatchOneToMany:
     sample_metadata = sample_metadata.to_dataframe()
-    focus = sample_metadata[
-        sample_metadata[case_control_column] == case_identifier
-    ]
+    focus = sample_metadata[sample_metadata[case_control_column] == case_identifier]
     background = sample_metadata[
         sample_metadata[case_control_column] != case_identifier
     ]
 
-    # age_years+-5 bmi+-3.0
     if tolerances is None:
         tolerance_map = None
     else:
-        tolerance_map = dict([x.split("+-") for x in tolerances])
-        tolerance_map = {k: float(v) for k, v in tolerance_map.items()}
+        tolerance_map = {}
+        for token in tolerances:
+            parts = token.split("+-")
+            if len(parts) != 2:
+                raise ValueError(
+                    f"Malformed tolerance token '{token}'. "
+                    "Expected format: 'category+-value' (e.g., 'age_years+-5')."
+                )
+            cat, val_str = parts
+            try:
+                val = float(val_str)
+            except ValueError:
+                raise ValueError(
+                    f"Non-numeric tolerance value '{val_str}' in token '{token}'. "
+                    "Expected format: 'category+-value' (e.g., 'age_years+-5')."
+                )
+            if val < 0:
+                raise ValueError(
+                    f"Tolerance must be non-negative, got {val} in token '{token}'."
+                )
+            tolerance_map[cat] = val
 
     cm_one_to_many = match_by_multiple(
         focus=focus,
         background=background,
         categories=categories,
         tolerance_map=tolerance_map,
-        on_failure=on_failure
+        on_failure=on_failure,
     )
     return cm_one_to_many
 
@@ -49,6 +65,6 @@ def match_one_to_one(
         iterations=iterations,
         strict=strict,
         n_jobs=n_jobs,
-        seed=seed
+        seed=seed,
     )
     return res.to_dataframe()
