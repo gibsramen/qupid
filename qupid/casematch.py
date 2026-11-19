@@ -111,7 +111,7 @@ class CaseMatchOneToMany(_BaseCaseMatch):
         seed: int = None,
         n_jobs: int = 1,
         parallel_args: dict = None,
-    ) -> list[CaseMatchOneToOne]:
+    ) -> "CaseMatchCollection":
         """Create multiple matched pairs of cases to controls.
 
         NOTE: Can probably improve algorithm with "best" match from tolerance

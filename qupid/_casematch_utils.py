@@ -99,7 +99,7 @@ def _load(path: str) -> dict[str, set]:
 
 def _check_one_to_one(case_control_map: dict) -> bool:
     """Check if mapping dict is one-to-one (one control per case)."""
-    return all([len(ctrls) == 1 for ctrls in case_control_map.values()])
+    return all(len(ctrls) == 1 for ctrls in case_control_map.values())
 
 
 def _validate_distance_matrix(cases: set, controls: set, dm: DistanceMatrix) -> None:
