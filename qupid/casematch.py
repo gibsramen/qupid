@@ -318,28 +318,23 @@ class CaseMatchOneToOne(_BaseCaseMatch):
             raise exc.NotOneToOneError(cm)
         return cls(cm)
 
+    @property
+    def pairs(self) -> dict[str, str]:
+        """Return the case-to-control mapping as a plain dict (1:1 guaranteed)."""
+        return {
+            case: next(iter(ctrls)) for case, ctrls in self.case_control_map.items()
+        }
+
     def to_series(self) -> pd.Series:
-        if not self.case_control_map:
-            return pd.Series(dtype=object)
-        pairs = [
-            (case, next(iter(ctrls))) for case, ctrls in self.case_control_map.items()
-        ]
-        cases, controls = zip(*pairs)
-        return pd.Series(controls, index=cases)
+        p = self.pairs
+        return pd.Series(p) if p else pd.Series(dtype=object)
 
     def _pairs(self) -> list[tuple[str, str]]:
         """Return sorted (case, control) pairs for ordering."""
-        return sorted(
-            (case, next(iter(ctrls))) for case, ctrls in self.case_control_map.items()
-        )
+        return sorted(self.pairs.items())
 
     def __hash__(self) -> int:
-        return hash(
-            frozenset(
-                (case, next(iter(ctrls)))
-                for case, ctrls in self.case_control_map.items()
-            )
-        )
+        return hash(frozenset(self.pairs.items()))
 
     def __lt__(self, other) -> bool:
         """Used for sorting; @total_ordering fills in the remaining comparisons."""

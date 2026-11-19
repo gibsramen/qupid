@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, NamedTuple
 from warnings import warn
 
 import numpy as np
@@ -12,18 +12,26 @@ from skbio.stats.distance import permanova as _skbio_permanova
 
 from qupid.casematch import CaseMatchCollection, CaseMatchOneToMany, CaseMatchOneToOne
 
-_TEST_REGISTRY: dict[str, tuple[Callable, str, str, bool]] = {
-    "t": (ss.ttest_ind, "t-test", "t", False),
-    "ttest": (ss.ttest_ind, "t-test", "t", False),
-    "t-test": (ss.ttest_ind, "t-test", "t", False),
-    "mw": (ss.mannwhitneyu, "mann-whitney", "U", False),
-    "mannwhitney": (ss.mannwhitneyu, "mann-whitney", "U", False),
-    "mann-whitney": (ss.mannwhitneyu, "mann-whitney", "U", False),
-    "paired-t": (ss.ttest_rel, "paired-t", "t", True),
-    "ttest-rel": (ss.ttest_rel, "paired-t", "t", True),
-    "paired-ttest": (ss.ttest_rel, "paired-t", "t", True),
-    "wilcoxon": (ss.wilcoxon, "wilcoxon", "W", True),
-    "wilcoxon-sr": (ss.wilcoxon, "wilcoxon", "W", True),
+
+class _TestEntry(NamedTuple):
+    fn: Callable
+    method_name: str
+    stat_name: str
+    paired: bool
+
+
+_TEST_REGISTRY: dict[str, _TestEntry] = {
+    "t": _TestEntry(ss.ttest_ind, "t-test", "t", False),
+    "ttest": _TestEntry(ss.ttest_ind, "t-test", "t", False),
+    "t-test": _TestEntry(ss.ttest_ind, "t-test", "t", False),
+    "mw": _TestEntry(ss.mannwhitneyu, "mann-whitney", "U", False),
+    "mannwhitney": _TestEntry(ss.mannwhitneyu, "mann-whitney", "U", False),
+    "mann-whitney": _TestEntry(ss.mannwhitneyu, "mann-whitney", "U", False),
+    "paired-t": _TestEntry(ss.ttest_rel, "paired-t", "t", True),
+    "ttest-rel": _TestEntry(ss.ttest_rel, "paired-t", "t", True),
+    "paired-ttest": _TestEntry(ss.ttest_rel, "paired-t", "t", True),
+    "wilcoxon": _TestEntry(ss.wilcoxon, "wilcoxon", "W", True),
+    "wilcoxon-sr": _TestEntry(ss.wilcoxon, "wilcoxon", "W", True),
 }
 
 
@@ -302,13 +310,9 @@ def _single_univariate_test(
     :rtype: pd.Series
     """
     if paired:
-        case_ids: list[str] = []
-        ctrl_ids: list[str] = []
-        for case, ctrl_set in casematch.case_control_map.items():
-            case_ids.append(case)
-            ctrl_ids.append(next(iter(ctrl_set)))
-        case_vals = values.loc[case_ids].values.ravel()
-        ctrl_vals = values.loc[ctrl_ids].values.ravel()
+        p = casematch.pairs
+        case_vals = values.loc[list(p.keys())].values.ravel()
+        ctrl_vals = values.loc[list(p.values())].values.ravel()
     else:
         case_vals = values.loc[list(casematch.cases)].values.ravel()
         ctrl_vals = values.loc[list(casematch.controls)].values.ravel()
