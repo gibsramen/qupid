@@ -280,9 +280,7 @@ def _single_permanova(
     idx = [id_to_idx[s] for s in sample_ids]
     dm_arr = distance_matrix.data[np.ix_(idx, idx)].copy()
     sub_dm = DistanceMatrix(dm_arr, ids=sample_ids)
-    grouping = pd.Series(
-        ["case"] * len(cases) + ["control"] * len(controls), index=sample_ids
-    )
+    grouping = ["case"] * len(cases) + ["control"] * len(controls)
     return _skbio_permanova(sub_dm, grouping, permutations=permutations)
 
 

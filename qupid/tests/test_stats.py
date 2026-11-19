@@ -209,3 +209,16 @@ def test_single_permanova_fields():
     dm = DistanceMatrix(dm_arr, ids=all_ids)
     result = stats._single_permanova(cm, dm, permutations=99)
     assert set(result.index) == exp_fields
+
+
+def test_single_permanova_matches_skbio():
+    rng = np.random.default_rng(42)
+    n = 10
+    ids = [f"s{i}" for i in range(n)]
+    raw = rng.random((n, n))
+    dm_arr = np.triu(raw, 1) + np.triu(raw, 1).T
+    dm = DistanceMatrix(dm_arr, ids=ids)
+    cm = mm.CaseMatchOneToOne({f"s{i}": {f"s{i+5}"} for i in range(5)})
+    result = stats._single_permanova(cm, dm, permutations=99)
+    assert result["test statistic"] > 0
+    assert 0.0 < result["p-value"] <= 1.0
