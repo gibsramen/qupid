@@ -240,9 +240,15 @@ def balance(focus, background, matches, categories, output):
     """Report standardized mean difference (SMD) per covariate pre/post matching."""
     focus_df, background_df = _load_focus_background(focus, background)
     coll = CaseMatchCollection.load(matches)
-    casematch = coll[0]
-    res = compute_covariate_balance(
-        focus_df, background_df, casematch, list(categories)
+    all_balances = [
+        compute_covariate_balance(focus_df, background_df, cm, list(categories))
+        for cm in coll
+    ]
+    res = (
+        pd.concat(all_balances)
+        .groupby("covariate")
+        .mean(numeric_only=True)
+        .reset_index()
     )
     res.to_csv(output, sep="\t", index=False)
     print(f"Balance report written to {output}")
